@@ -64,6 +64,8 @@ public:
 class CPU {
     std::array<uint32_t, 32> regs{};
     uint32_t pc = 0x00000000;
+    uint32_t hi = 0x00000000;
+    uint32_t lo = 0x00000000;
     Memory& memory;
 
 public:
@@ -72,6 +74,8 @@ public:
     void step() {
         uint32_t instr = memory.load32(pc);
         pc += 4;
+
+
 
         uint32_t opcode = instr >> 26;
         uint32_t rs = (instr >> 21) & 0x1F;
@@ -86,93 +90,76 @@ public:
             case 0x00:// SLL
 
                 break;
+            case 0x02:// SRL
+
+                break;
+            case 0x03:// SRA
+
+                break;
+            case 0x08:// JR
+
+                break;
+            case 0x09:// JALR
+
+                break;
+            case 0x10:// MFHI
+                regs[rd] = hi;
+                break;
+            case 0x12:// MFLO
+                regs[rd] = lo;
+                break;
+            case 0x18:// MULT
+                uint64_t prod = regs[rs] * regs[rt];
+                lo = prod & 0xFFFFFF;
+                hi = (prod << 32) & 0xFFFFFF;
+
+                break;
+            case 0x1A:// DIV
+                uint32_t q = regs[rs] / regs[rt];
+                lo = q;
+                uint32_t r = regs[rs] % regs[rt];
+                hi = r;
+
+                break;
             case 0x20:
                 regs[rd] = regs[rs] + regs[rt];
 
                 std::cout << "ADD r" << rd << " = r" << rs << " + r" << rt << "\n"; //logs console
                 break;
             case 0x21:// ADDU
-
+                regs[rd] = regs[rs] + regs[rt];
                 break;
             case 0x22:// SUB
-
+                regs[rd] = (int32_t)regs[rs] - (int32_t)regs[rt];
                 break;
             case 0x23:// SUBU
-
+                regs[rd] = regs[rs] - regs[rt];
                 break;
             case 0x24:// AND
-
+                regs[rd] = regs[rs] & regs[rt];
                 break;
             case 0x25:// OR
-
+                regs[rd] = regs[rs] | regs[rt];
                 break;
             case 0x26:// XOR
-
+                regs[rd] = regs[rs] ^ regs[rt];
                 break;
             case 0x2A:// SLT
-
+                regs[rd] = ((int32_t)regs[rs] < (int32_t)regs[rt]) ? 1u : 0u;
                 break;
             case 0x2B:// SLTU
-
+                regs[rd] = (regs[rs] < regs[rt]) ? 1u : 0u;
                 break;
             }
-
-
-
-            /*if (funct == 0x20) { // ADD
-                regs[rd] = regs[rs] + regs[rt];
-
-                std::cout << "ADD r" << rd << " = r" << rs << " + r" << rt << "\n"; //logs console
-            }*/
-            else if (funct == 0x21) {// ADDU
-
-            }
-            else if (funct == 0x22) {// SUB
-
-            }
-            else if (funct == 0x23) {// SUBU
-
-            }
-            else if (funct == 0x24) {// AND
-
-            }
-            else if (funct == 0x25) {// OR
-
-            }
-            else if (funct == 0x26) {// XOR
-
-            }
-            else if (funct == 0x24) {// AND
-
-            }
-            else if (funct == 0x24) {// AND
-
-            }
-            else if (funct == 0x24) {// AND
-
-            }
-            else if (funct == 0x2A) {// SLT
-
-            }
-            else if (funct == 0x2B) {// SLTU
-
-            }
-            break;
         }
-        case 0x08: // ADDI
-            regs[rt] = regs[rs] + (int16_t)imm;
+        case 0x01: // BGEZ
 
-            std::cout << "ADDI r" << rt << " = r" << rs << " + " << (int16_t)imm << "\n"; //logs console
             break;
-        case 0x23: // LW
-            regs[rt] = memory.load32(regs[rs] + (int16_t)imm);
+        case 0x02: // J
 
-            std::cout << "LW r" << rt << " <- [" << regs[rs] + (int16_t)imm << "]\n"; //logs console
             break;
-        case 0x2B: // SW
-            memory.store32(regs[rs] + (int16_t)imm, regs[rt]);
+        case 0x03: // JAL
 
-            std::cout << "SW [" << regs[rs] + (int16_t)imm << "] <- r" << rt << "\n"; //logs console
             break;
         case 0x04: // BEQ
             if (regs[rs] == regs[rt]) {
@@ -180,6 +167,64 @@ public:
 
                 std::cout << "BEQ taken\n";//logs console
             }
+            break;
+        case 0x05: // BNE
+
+            break;
+        case 0x06: // BLEZ
+
+            break;
+
+        case 0x08: // ADDI
+            regs[rt] = regs[rs] + (int16_t)imm;
+
+            std::cout << "ADDI r" << rt << " = r" << rs << " + " << (int16_t)imm << "\n"; //logs console
+            break;
+        case 0x09: // ADDIU
+            
+            break;
+        case 0x0A: // SLTI
+
+            break;
+        case 0x0C: // ANDI
+
+            break;
+        case 0x0D: // ORI
+
+            break;
+        case 0x0E: // XORI
+
+            break;
+        case 0x0F: // LUI
+
+            break;
+        case 0x20: // LB
+
+            break;
+        case 0x21: // LH
+
+            break;
+        case 0x23: // LW
+            regs[rt] = memory.load32(regs[rs] + (int16_t)imm);
+
+            std::cout << "LW r" << rt << " <- [" << regs[rs] + (int16_t)imm << "]\n"; //logs console
+            break;
+        case 0x24: // LBU
+
+            break;
+        case 0x25: // LHU
+
+            break;
+        case 0x28: // SB
+
+            break;
+        case 0x29: // SH
+
+            break;
+        case 0x2B: // SW
+            memory.store32(regs[rs] + (int16_t)imm, regs[rt]);
+
+            std::cout << "SW [" << regs[rs] + (int16_t)imm << "] <- r" << rt << "\n"; //logs console
             break;
         default:
             std::cerr << "Unknown opcode: " << std::hex << opcode << "\n";
