@@ -1,6 +1,7 @@
 #include "Memoire.h"
 #include <iostream>
 #include <cstdio>
+#include <algorithm>
 
 static const u32 REGION_MASK[8] = {
     // KUSEG : 4 tranches de 512 Mo, adresse inchangée
@@ -53,6 +54,10 @@ u8 Memoire::load8(u32 addr) {
     else if (addr >= BIOS_START && addr < BIOS_START + BIOS_SIZE) {
         return bios[addr - BIOS_START];
     }
+    else if(addr >= 0x1F000000 && addr < 0x1F080000)
+    {
+        return 0xFF;
+    }
     else {
         std::cerr << "Read8 from unknown address: 0x" << std::hex << addr << "\n";
         return 0;
@@ -64,6 +69,34 @@ void Memoire::store32(u32 addr, u32 value) {
     if (addr < RAM_SIZE) {
         *(u32*)&ram[addr] = value;
     }
+    else if (addr == 0x1F801060)
+    {
+        std::cout << "ecriture sur RAM_SIZE" << "\n";
+    }
+    else if (addr == 0xFFFE0130) 
+    {
+        std::cout << "ecriture sur Cache Control" << "\n";
+    }
+    else if (addr >= 0x1F801000 && addr <= 0x1F801020)
+    {
+        std::cout << "ecriture sur Memory control" << "\n";
+    }
+    else if (addr >= 0x1F801C00 && addr <= 0x1F801FFF)
+    {
+        std::cout << "ecriture sur SPU" << "\n";
+    }
+    else if (addr >= 0x1F802000 && addr <= 0x1F80207F)
+    {
+        std::cout << "ecriture sur Expansion 2 / POST" << "\n";
+    }
+    else if (addr >= 0x1F801100 && addr <= 0x1F80112F)
+    {
+        std::cout << "ecriture sur Timers" << "\n";
+    }
+    else if (addr == 0x1F801C00 || addr == 0x1F801FFF)
+    {
+        std::cout << "ecriture sur Timers I_STAT / I_MASK" << "\n";
+    }
     else {
         std::cerr << "Write32 to unknown address: 0x" << std::hex << addr << "\n";
     }
@@ -74,6 +107,22 @@ void Memoire::store16(u32 addr, u16 value) {
     if (addr < RAM_SIZE) {
         *(u16*)&ram[addr] = value;
     }
+    else if (addr >= 0x1F801C00 && addr <= 0x1F801FFF)
+    {
+        std::cout << "ecriture sur SPU" << "\n";
+    }
+    else if (addr >= 0x1F802000 && addr <= 0x1F80207F)
+    {
+        std::cout << "ecriture sur Expansion 2 / POST" << "\n";
+    }
+    else if (addr >= 0x1F801100 && addr <= 0x1F80112F)
+    {
+        std::cout << "ecriture sur Timers" << "\n";
+    }
+    else if (addr == 0x1F801C00 || addr == 0x1F801FFF)
+    {
+        std::cout << "ecriture sur Timers I_STAT / I_MASK" << "\n";
+    }
     else {
         std::cerr << "Write16 to unknown address: 0x" << std::hex << addr << "\n";
     }
@@ -83,6 +132,22 @@ void Memoire::store8(u32 addr, u8 value) {
     addr = mask_region(addr);
     if (addr < RAM_SIZE) {
         ram[addr] = value;
+    }
+    else if (addr >= 0x1F801C00 && addr <= 0x1F801FFF)
+    {
+        std::cout << "ecriture sur SPU" << "\n";
+    }
+    else if (addr >= 0x1F802000 && addr <= 0x1F80207F)
+    {
+        std::cout << "ecriture sur Expansion 2 / POST" << "\n";
+    }
+    else if (addr >= 0x1F801100 && addr <= 0x1F80112F)
+    {
+        std::cout << "ecriture sur Timers" << "\n";
+    }
+    else if (addr == 0x1F801C00 || addr == 0x1F801FFF)
+    {
+        std::cout << "ecriture sur Timers I_STAT / I_MASK" << "\n";
     }
     else {
         std::cerr << "Write8 to unknown address: 0x" << std::hex << addr << "\n";

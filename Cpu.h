@@ -8,7 +8,9 @@ constexpr int RA = 31;  // registre "return address"
 
 class CPU {
     std::array<u32, 32> regs{};
+    std::array<u32, 32> cop0_regs{};
 
+    bool cacheIsolated() const { return (cop0_regs[12] & 0x10000) != 0; }
     // Schema pc/next_pc pour les branch delay slots :
     // au moment d'executer une instruction ($),
     // pc = $+4 (delay slot) et next_pc = $+8.

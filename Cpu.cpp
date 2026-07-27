@@ -195,6 +195,18 @@ void CPU::step() {
         // difference est l'absence d'exception d'overflow.
         regs[rt] = regs[rs] + (s16)imm;
         break;
+    case 0x10: {// COP0
+        switch (rs) {   // rs sert de sous-opcode pour les coprocesseurs
+        case 0x00: // MFC0 : COP0[rd] -> regs[rt]
+            regs[rt] = cop0_regs[rd];
+            break;
+        case 0x04: // MTC0 : regs[rt] -> COP0[rd]
+            cop0_regs[rd] = regs[rt];
+            break;
+        default:
+            std::cerr << "Unknown COP0 instruction: 0x" << std::hex << rs << "\n";
+        }
+        break;
     case 0x0A: // SLTI (comparaison signee)
         regs[rt] = ((s32)regs[rs] < (s32)(s16)imm) ? 1u : 0u;
         break;
@@ -232,18 +244,22 @@ void CPU::step() {
         break;
 
     case 0x28: // SB (ecrit l'octet bas du registre)
-        memoire.store8(regs[rs] + (s16)imm, (u8)regs[rt]);
+        if (!cacheIsolated())
+            memoire.store8(regs[rs] + (s16)imm, (u8)regs[rt]);
         break;
     case 0x29: // SH (ecrit la moitie basse)
-        memoire.store16(regs[rs] + (s16)imm, (u16)regs[rt]);
+        if (!cacheIsolated())
+            memoire.store16(regs[rs] + (s16)imm, (u16)regs[rt]);
         break;
     case 0x2B: // SW
-        memoire.store32(regs[rs] + (s16)imm, regs[rt]);
+        if (!cacheIsolated())
+            memoire.store32(regs[rs] + (s16)imm, regs[rt]);
         break;
 
     default:
         std::cerr << "Unknown opcode: 0x" << std::hex << opcode << "\n";
     }
 
-    regs[0] = 0; // le registre zero vaut toujours 0
+             regs[0] = 0; // le registre zero vaut toujours 0
+    }
 }
