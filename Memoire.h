@@ -1,7 +1,9 @@
 #pragma once
 
 #include "common.h"
+#include "Gpu.h"
 #include "Interruptions.h"
+#include "Dma.h"
 #include <array>
 #include <string>
 #include <vector>
@@ -18,8 +20,11 @@ class Memoire {
     std::vector<u8> bios;
     std::array<u16, 0x200> spu_regs{};
     Interruptions irq;
+    Gpu gpu;
+    Dma dma;
 
 public:
+    Dma& getDma() { return dma; }
     Interruptions& getIrq() { return irq; }
     Memoire() : ram(RAM_SIZE, 0), bios(BIOS_SIZE, 0) {}
     // Lectures : l'adresse est TOUJOURS sur 32 bits,

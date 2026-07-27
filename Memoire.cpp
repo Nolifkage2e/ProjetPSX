@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <algorithm>
 
+
 static const u32 REGION_MASK[8] = {
     // KUSEG : 4 tranches de 512 Mo, adresse inchangée
     0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
@@ -36,6 +37,25 @@ u32 Memoire::load32(u32 addr) {
         std::cout << "lecture sur I_MASK " << irq.readStatus() <<"\n";
         return irq.readStatus();
     }
+    else if (addr == GP0_ADDR)
+    {
+        std::cout << "lecture sur gp0 " << gpu.readData() << "\n";
+        return gpu.readData();
+    }
+    else if (addr == GP1_ADDR)
+    {
+        std::cout << "lecture sur gp1 " << gpu.readStatus() << "\n";
+        return gpu.readStatus();
+    }
+    else if (addr >= DMA_BASE && addr < DMA_END)
+    {
+        std::cout << "lecture sur DMA - adresse: 0x" << std::hex << addr << " : valuer: 0x" << std::hex << dma.read(addr) <<"\n";
+        return dma.read(addr);
+    }
+    else if (addr == DPCR_ADDR || addr == DICR_ADDR) {
+        std::cout << "lecture sur DMA - adresse: 0x" << std::hex << addr << " : valuer: 0x" << std::hex << dma.read(addr) << "\n";
+        return dma.read(addr);
+    }
     else {
         std::cerr << "Read32 from unknown address: 0x" << std::hex << addr << "\n";
         return 0;
@@ -64,10 +84,10 @@ u16 Memoire::load16(u32 addr) {
     {
         if (addr == 0x1F801DAE) {  
             u16 spucnt = spu_regs[(0x1F801DAA - 0x1F801C00) >> 1];
-            std::cout << "lecture dans le registre: 0x" << std::hex << ((0x1F801DAA - 0x1F801C00) >> 1) << " valeur : 0x" << std::hex <<(spucnt & 0x3F) << "\n";
+            std::cout << "lecture dans le registre SPU: 0x" << std::hex << ((0x1F801DAA - 0x1F801C00) >> 1) << " valeur : 0x" << std::hex <<(spucnt & 0x3F) << "\n";
             return spucnt & 0x3F;
         }
-        std::cout << "lecture dans le registre: 0x" << std::hex << ((addr - 0x1F801C00) >> 1) << " valeur : 0x" << std::hex << (spu_regs[(addr - 0x1F801C00) >> 1]) << "\n";
+        std::cout << "lecture dans le registre SPU: 0x" << std::hex << ((addr - 0x1F801C00) >> 1) << " valeur : 0x" << std::hex << (spu_regs[(addr - 0x1F801C00) >> 1]) << "\n";
         return spu_regs[(addr - 0x1F801C00) >> 1];
 
     }
@@ -137,6 +157,29 @@ void Memoire::store32(u32 addr, u32 value) {
         return;
 
     }
+    else if (addr == GP0_ADDR)
+    {
+        std::cout << "ecriture sur gp0 " << value << "\n";
+        gpu.gp0(value);
+        return;
+
+    }
+    else if (addr == GP1_ADDR)
+    {
+        std::cout << "ecriture sur gp1" << value << "\n";
+        gpu.gp1(value);
+        return;
+
+    }
+    else if (addr >= DMA_BASE && addr < DMA_END)
+    {
+        std::cout << "ecriture sur DMA - adresse: 0x" << std::hex << addr << " valeur: 0x" << std::hex << value <<"\n";
+        dma.write(addr, value);
+    }
+    else if (addr == DPCR_ADDR || addr == DICR_ADDR) {
+        std::cout << "ecriture sur DMA - adresse: 0x" << std::hex << addr << " valeur: 0x" << std::hex << value << "\n";
+        dma.write(addr, value);
+    }
     else {
         std::cerr << "Write32 to unknown address: 0x" << std::hex << addr << "\n";
     }
@@ -177,7 +220,7 @@ void Memoire::store16(u32 addr, u16 value) {
 
     }
     else if (addr >= 0x1F801C00 && addr < 0x1F801E00) {
-        std::cout << "ecriture dans le registre: 0x" << std::hex << ((addr - 0x1F801C00) >> 1) << " valeur : 0x" << std::hex << value <<"\n";
+        std::cout << "ecriture dans le registre SPU: 0x" << std::hex << ((addr - 0x1F801C00) >> 1) << " valeur : 0x" << std::hex << value <<"\n";
         spu_regs[(addr - 0x1F801C00) >> 1] = value;
         return;
     }

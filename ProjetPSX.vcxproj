@@ -129,9 +129,11 @@
   <ItemGroup>
     <ClInclude Include="common.h" />
     <ClInclude Include="Cpu.h" />
+    <ClInclude Include="Dma.h" />
     <ClInclude Include="Emulateur.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="emu.h" />
+    <ClInclude Include="Gpu.h" />
     <ClInclude Include="Interruptions.h" />
     <ClInclude Include="Memoire.h" />
     <ClInclude Include="ProjetPSX.h" />
@@ -140,8 +142,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Cpu.cpp" />
+    <ClCompile Include="Dma.cpp" />
     <ClCompile Include="emu.cpp" />
     <ClCompile Include="Emulateur.cpp" />
+    <ClCompile Include="Gpu.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Memoire.cpp" />
     <ClCompile Include="ProjetPSX.cpp">
