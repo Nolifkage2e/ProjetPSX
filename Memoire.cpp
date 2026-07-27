@@ -26,6 +26,16 @@ u32 Memoire::load32(u32 addr) {
     else if (addr >= BIOS_START && addr < BIOS_START + BIOS_SIZE) {
         return *(u32*)&bios[addr - BIOS_START];
     }
+    else if (addr == IRQ_STAT_ADDR)
+    {
+        std::cout << "lecture sur I_STAT" << irq.readStatus() <<"\n";
+        return irq.readStatus();
+    }
+    else if (addr == IRQ_MASK_ADDR)
+    {
+        std::cout << "lecture sur I_MASK " << irq.readStatus() <<"\n";
+        return irq.readStatus();
+    }
     else {
         std::cerr << "Read32 from unknown address: 0x" << std::hex << addr << "\n";
         return 0;
@@ -39,6 +49,27 @@ u16 Memoire::load16(u32 addr) {
     }
     else if (addr >= BIOS_START && addr < BIOS_START + BIOS_SIZE) {
         return *(u16*)&bios[addr - BIOS_START];
+    }
+    else if (addr == IRQ_STAT_ADDR)
+    {
+        std::cout << "lecture sur I_STAT" << "\n";
+        return irq.readStatus();
+    }
+    else if (addr == IRQ_MASK_ADDR)
+    {
+        std::cout << "lecture sur I_MASK" << "\n";
+        return irq.readStatus();
+    }
+    else if (addr >= 0x1F801C00 && addr < 0x1F801E00)
+    {
+        if (addr == 0x1F801DAE) {  
+            u16 spucnt = spu_regs[(0x1F801DAA - 0x1F801C00) >> 1];
+            std::cout << "lecture dans le registre: 0x" << std::hex << ((0x1F801DAA - 0x1F801C00) >> 1) << " valeur : 0x" << std::hex <<(spucnt & 0x3F) << "\n";
+            return spucnt & 0x3F;
+        }
+        std::cout << "lecture dans le registre: 0x" << std::hex << ((addr - 0x1F801C00) >> 1) << " valeur : 0x" << std::hex << (spu_regs[(addr - 0x1F801C00) >> 1]) << "\n";
+        return spu_regs[(addr - 0x1F801C00) >> 1];
+
     }
     else {
         std::cerr << "Read16 from unknown address: 0x" << std::hex << addr << "\n";
@@ -93,9 +124,18 @@ void Memoire::store32(u32 addr, u32 value) {
     {
         std::cout << "ecriture sur Timers" << "\n";
     }
-    else if (addr == 0x1F801C00 || addr == 0x1F801FFF)
+    else if (addr == IRQ_STAT_ADDR)
     {
-        std::cout << "ecriture sur Timers I_STAT / I_MASK" << "\n";
+        std::cout << "ecriture sur I_STAT " << value <<"\n";
+        irq.writeStatus(value);
+        return;
+    }
+    else if (addr == IRQ_MASK_ADDR)
+    {
+        std::cout << "ecriture sur I_MASK " << value <<"\n";
+        irq.writeMask(value);
+        return;
+
     }
     else {
         std::cerr << "Write32 to unknown address: 0x" << std::hex << addr << "\n";
@@ -122,6 +162,24 @@ void Memoire::store16(u32 addr, u16 value) {
     else if (addr == 0x1F801C00 || addr == 0x1F801FFF)
     {
         std::cout << "ecriture sur Timers I_STAT / I_MASK" << "\n";
+    }
+    else if (addr == IRQ_STAT_ADDR)
+    {
+        std::cout << "ecriture sur I_STAT" << "\n";
+        irq.writeStatus(value);
+        return;
+    }
+    else if (addr == IRQ_MASK_ADDR)
+    {
+        std::cout << "ecriture sur I_MASK" << "\n";
+        irq.writeMask(value);
+        return;
+
+    }
+    else if (addr >= 0x1F801C00 && addr < 0x1F801E00) {
+        std::cout << "ecriture dans le registre: 0x" << std::hex << ((addr - 0x1F801C00) >> 1) << " valeur : 0x" << std::hex << value <<"\n";
+        spu_regs[(addr - 0x1F801C00) >> 1] = value;
+        return;
     }
     else {
         std::cerr << "Write16 to unknown address: 0x" << std::hex << addr << "\n";

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "Interruptions.h"
 #include <array>
 #include <string>
 #include <vector>
@@ -10,11 +11,16 @@ constexpr size_t RAM_SIZE = 2 * 1024 * 1024;  // 2 MB
 constexpr size_t BIOS_SIZE = 512 * 1024;       // 512 KB
 constexpr u32    BIOS_START = 0x1FC00000;
 
+struct InterruptState { u32 status = 0; u32 mask = 0; };
+
 class Memoire {
     std::vector<u8> ram;
     std::vector<u8> bios;
+    std::array<u16, 0x200> spu_regs{};
+    Interruptions irq;
 
 public:
+    Interruptions& getIrq() { return irq; }
     Memoire() : ram(RAM_SIZE, 0), bios(BIOS_SIZE, 0) {}
     // Lectures : l'adresse est TOUJOURS sur 32 bits,
     // seule la taille de la donnee change.

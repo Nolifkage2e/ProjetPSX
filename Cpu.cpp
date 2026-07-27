@@ -20,7 +20,6 @@ void CPU::step() {
     u32 branch_dest = pc + ((s16)imm << 2);
 
     switch (opcode) {
-
     case 0x00: { // R-type
         u32 funct = instr & 0x3F;
         switch (funct) {

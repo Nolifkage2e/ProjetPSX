@@ -25,6 +25,7 @@ class CPU {
 
 public:
     CPU(Memoire& mem) : memoire(mem) {}
-
+    u32 getPc() const { return pc; }
+    u32 getReg(int i) const { return regs[i]; }
     void step();
 };
