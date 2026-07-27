@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 
+
 constexpr size_t RAM_SIZE = 2 * 1024 * 1024;//2MB
 constexpr uint32_t BIOS_START = 0x1FC00000;
 constexpr size_t BIOS_SIZE = 512 * 1024;
@@ -35,7 +36,9 @@ public:
     }
 
     void loadBIOS(const std::string& filename) {
-        FILE* f = fopen(filename.c_str(), "rb");
+        FILE* f;
+        fopen_s(&f, filename.c_str(), "rb");
+
         if (!f) {
             std::cerr << "Failed to open BIOS file\n";
             exit(1);
@@ -87,145 +90,148 @@ public:
         case 0x00: { // R-type (e.g. ADD)
             uint32_t funct = instr & 0x3F;
             switch (funct) {
-            case 0x00:// SLL
+            case 0x00:
+            {// SLL
 
                 break;
-            case 0x02:// SRL
+            }
+            case 0x02: {// SRL
 
-                break;
-            case 0x03:// SRA
+                break; }
+            case 0x03:
+            {// SRA
 
-                break;
-            case 0x08:// JR
+                break; }
+            case 0x08: {// JR
 
-                break;
-            case 0x09:// JALR
+                break; }
+            case 0x09: {// JALR
 
-                break;
-            case 0x10:// MFHI
+                break; }
+            case 0x10: {// MFHI
                 regs[rd] = hi;
-                break;
-            case 0x12:// MFLO
+                break; }
+            case 0x12: {// MFLO
                 regs[rd] = lo;
-                break;
-            case 0x18:// MULT
+                break; }
+            case 0x18: {// MULT
                 uint64_t prod = regs[rs] * regs[rt];
                 lo = prod & 0xFFFFFF;
                 hi = (prod << 32) & 0xFFFFFF;
 
-                break;
-            case 0x1A:// DIV
+                break; }
+            case 0x1A: {// DIV
                 uint32_t q = regs[rs] / regs[rt];
                 lo = q;
                 uint32_t r = regs[rs] % regs[rt];
                 hi = r;
 
-                break;
-            case 0x20:
+                break; }
+            case 0x20: {
                 regs[rd] = regs[rs] + regs[rt];
 
                 std::cout << "ADD r" << rd << " = r" << rs << " + r" << rt << "\n"; //logs console
-                break;
-            case 0x21:// ADDU
+                break; }
+            case 0x21: {// ADDU
                 regs[rd] = regs[rs] + regs[rt];
-                break;
-            case 0x22:// SUB
+                break; }
+            case 0x22: {// SUB
                 regs[rd] = (int32_t)regs[rs] - (int32_t)regs[rt];
-                break;
-            case 0x23:// SUBU
+                break; }
+            case 0x23: {// SUBU
                 regs[rd] = regs[rs] - regs[rt];
-                break;
-            case 0x24:// AND
+                break; }
+            case 0x24: {// AND
                 regs[rd] = regs[rs] & regs[rt];
-                break;
-            case 0x25:// OR
+                break; }
+            case 0x25: {// OR
                 regs[rd] = regs[rs] | regs[rt];
-                break;
-            case 0x26:// XOR
+                break; }
+            case 0x26: {// XOR
                 regs[rd] = regs[rs] ^ regs[rt];
-                break;
-            case 0x2A:// SLT
+                break; }
+            case 0x2A: {// SLT
                 regs[rd] = ((int32_t)regs[rs] < (int32_t)regs[rt]) ? 1u : 0u;
-                break;
-            case 0x2B:// SLTU
+                break; }
+            case 0x2B: {// SLTU
                 regs[rd] = (regs[rs] < regs[rt]) ? 1u : 0u;
-                break;
+                break; }
             }
         }
-        case 0x01: // BGEZ
+        case 0x01: { // BGEZ
 
-            break;
-        case 0x02: // J
+            break; }
+        case 0x02: { // J
 
-            break;
-        case 0x03: // JAL
+            break; }
+        case 0x03: { // JAL
 
-            break;
-        case 0x04: // BEQ
+            break; }
+        case 0x04: { // BEQ
             if (regs[rs] == regs[rt]) {
                 pc += ((int16_t)imm << 2);
 
                 std::cout << "BEQ taken\n";//logs console
             }
-            break;
-        case 0x05: // BNE
+            break; }
+        case 0x05: { // BNE
 
-            break;
-        case 0x06: // BLEZ
+            break; }
+        case 0x06: { // BLEZ
 
-            break;
+            break; }
 
-        case 0x08: // ADDI
+        case 0x08: { // ADDI
             regs[rt] = regs[rs] + (int16_t)imm;
 
             std::cout << "ADDI r" << rt << " = r" << rs << " + " << (int16_t)imm << "\n"; //logs console
-            break;
-        case 0x09: // ADDIU
-            
-            break;
-        case 0x0A: // SLTI
+            break; }
+        case 0x09: { // ADDIU
 
-            break;
-        case 0x0C: // ANDI
+            break; }
+        case 0x0A: { // SLTI
 
-            break;
-        case 0x0D: // ORI
+            break; }
+        case 0x0C: { // ANDI
 
-            break;
-        case 0x0E: // XORI
+            break; }
+        case 0x0D: { // ORI
 
-            break;
-        case 0x0F: // LUI
+            break; }
+        case 0x0E: { // XORI
 
-            break;
-        case 0x20: // LB
+            break; }
+        case 0x0F: { // LUI
 
-            break;
-        case 0x21: // LH
+            break; }
+        case 0x20: { // LB
 
-            break;
-        case 0x23: // LW
+            break; }
+        case 0x21: { // LH
+
+            break; }
+        case 0x23: { // LW
             regs[rt] = memory.load32(regs[rs] + (int16_t)imm);
 
             std::cout << "LW r" << rt << " <- [" << regs[rs] + (int16_t)imm << "]\n"; //logs console
-            break;
-        case 0x24: // LBU
+            break; }
+        case 0x24: { // LBU
 
-            break;
-        case 0x25: // LHU
+            break; }
+        case 0x25: { // LHU
 
-            break;
-        case 0x28: // SB
+            break; }
+        case 0x28: { // SB
 
-            break;
-        case 0x29: // SH
+            break; }
+        case 0x29: { // SH
 
-            break;
-        case 0x2B: // SW
+            break; }
+        case 0x2B: { // SW
             memory.store32(regs[rs] + (int16_t)imm, regs[rt]);
 
             std::cout << "SW [" << regs[rs] + (int16_t)imm << "] <- r" << rt << "\n"; //logs console
-            break;
+            break; }
         default:
             std::cerr << "Unknown opcode: " << std::hex << opcode << "\n";
         }
@@ -259,8 +265,10 @@ public:
 };
 
 int main() {
-    Emulator emu;
-    emu.loadTestProgram(); // charge notre mini programme
-    emu.run(20); // exécute 20 instructions
+    Memory mem;
+    mem.loadBIOS("../bios/SCPH1001.BIN");
+    //Emulator emu;
+    //emu.loadTestProgram(); // charge notre mini programme
+    //emu.run(20); // exécute 20 instructions
     return 0;
 }
