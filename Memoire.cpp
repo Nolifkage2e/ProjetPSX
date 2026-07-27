@@ -2,7 +2,23 @@
 #include <iostream>
 #include <cstdio>
 
+static const u32 REGION_MASK[8] = {
+    // KUSEG : 4 tranches de 512 Mo, adresse inchangée
+    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+    // KSEG0 : on retire le bit 31
+    0x7FFFFFFF,
+    // KSEG1 : on retire les bits 31-29
+    0x1FFFFFFF,
+    // KSEG2 : à part (cache control), on n'y touche pas pour l'instant
+    0xFFFFFFFF, 0xFFFFFFFF,
+};
+
+static u32 mask_region(u32 addr) {
+    return addr & REGION_MASK[addr >> 29];
+}
+
 u32 Memoire::load32(u32 addr) {
+    addr = mask_region(addr);
     if (addr < RAM_SIZE) {
         return *(u32*)&ram[addr];
     }
@@ -16,6 +32,7 @@ u32 Memoire::load32(u32 addr) {
 }
 
 u16 Memoire::load16(u32 addr) {
+    addr = mask_region(addr);
     if (addr < RAM_SIZE) {
         return *(u16*)&ram[addr];
     }
@@ -29,6 +46,7 @@ u16 Memoire::load16(u32 addr) {
 }
 
 u8 Memoire::load8(u32 addr) {
+    addr = mask_region(addr);
     if (addr < RAM_SIZE) {
         return ram[addr];
     }
@@ -42,6 +60,7 @@ u8 Memoire::load8(u32 addr) {
 }
 
 void Memoire::store32(u32 addr, u32 value) {
+    addr = mask_region(addr);
     if (addr < RAM_SIZE) {
         *(u32*)&ram[addr] = value;
     }
@@ -51,6 +70,7 @@ void Memoire::store32(u32 addr, u32 value) {
 }
 
 void Memoire::store16(u32 addr, u16 value) {
+    addr = mask_region(addr);
     if (addr < RAM_SIZE) {
         *(u16*)&ram[addr] = value;
     }
@@ -60,6 +80,7 @@ void Memoire::store16(u32 addr, u16 value) {
 }
 
 void Memoire::store8(u32 addr, u8 value) {
+    addr = mask_region(addr);
     if (addr < RAM_SIZE) {
         ram[addr] = value;
     }
