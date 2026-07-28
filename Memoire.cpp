@@ -31,12 +31,12 @@ u32 Memoire::load32(u32 addr) {
     }
     else if (addr == IRQ_STAT_ADDR)
     {
-        std::cout << "lecture sur I_STAT" << irq.readStatus() <<"\n";
+      //std::cout << "lecture sur I_STAT" << irq.readStatus() <<"\n";
         return irq.readStatus();
     }
     else if (addr == IRQ_MASK_ADDR)
     {
-        std::cout << "lecture sur I_MASK " << irq.readStatus() <<"\n";
+        //std::cout << "lecture sur I_MASK " << irq.readStatus() <<"\n";
         return irq.readStatus();
     }
     else if (addr == GP0_ADDR)
@@ -148,27 +148,27 @@ void Memoire::store32(u32 addr, u32 value) {
     }
     else if (addr == IRQ_STAT_ADDR)
     {
-        std::cout << "ecriture sur I_STAT " << value <<"\n";
+        //std::cout << "ecriture sur I_STAT " << value <<"\n";
         irq.writeStatus(value);
         return;
     }
     else if (addr == IRQ_MASK_ADDR)
     {
-        std::cout << "ecriture sur I_MASK " << value <<"\n";
+        //std::cout << "ecriture sur I_MASK - valeur 0x:" << std::hex << value <<"\n";
         irq.writeMask(value);
         return;
 
     }
     else if (addr == GP0_ADDR)
     {
-        std::cout << "ecriture sur gp0 " << value << "\n";
+        std::cout << "ecriture sur gp0: 0x" << value << "\n";
         gpu.gp0(value);
         return;
 
     }
     else if (addr == GP1_ADDR)
     {
-        std::cout << "ecriture sur gp1" << value << "\n";
+        std::cout << "ecriture sur gp1: 0x" << value << "\n";
         gpu.gp1(value);
         return;
 
@@ -204,19 +204,15 @@ void Memoire::store16(u32 addr, u16 value) {
     {
         std::cout << "ecriture sur Timers" << "\n";
     }
-    else if (addr == 0x1F801C00 || addr == 0x1F801FFF)
-    {
-        std::cout << "ecriture sur Timers I_STAT / I_MASK" << "\n";
-    }
     else if (addr == IRQ_STAT_ADDR)
     {
-        std::cout << "ecriture sur I_STAT" << "\n";
+        //std::cout << "ecriture sur I_STAT" << "\n";
         irq.writeStatus(value);
         return;
     }
     else if (addr == IRQ_MASK_ADDR)
     {
-        std::cout << "ecriture sur I_MASK" << "\n";
+        //std::cout << "ecriture sur I_MASK - valeur 0x:" << std::hex << value << "\n";
         irq.writeMask(value);
         return;
 
@@ -250,7 +246,7 @@ void Memoire::store8(u32 addr, u8 value) {
     }
     else if (addr == 0x1F801C00 || addr == 0x1F801FFF)
     {
-        std::cout << "ecriture sur Timers I_STAT / I_MASK" << "\n";
+        //std::cout << "ecriture sur Timers I_STAT / I_MASK" << "\n";
     }
     else {
         std::cerr << "Write8 to unknown address: 0x" << std::hex << addr << "\n";

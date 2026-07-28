@@ -6,7 +6,7 @@
 int main() {
     Emulateur emu;
     emu.loadBIOS("SCPH1001.BIN");
-    emu.run(32400000);   // les 1000 premieres instructions du BIOS
+    emu.run(100000000);   // les 1000 premieres instructions du BIOS
     u32 pc = emu.getCpu().getPc();
     std::cout << "PC final : 0x" << std::hex << pc << "\n\n";
 

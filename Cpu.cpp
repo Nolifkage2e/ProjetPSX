@@ -2,13 +2,13 @@
 #include <iostream>
 
 void CPU::step() {
+    current_pc = pc;
     u32 instr = memoire.load32(pc);
 
-    // Garde-fou temporaire : detecte un saut hors RAM/BIOS
-    if (pc >= 0x00800000 && pc < 0x1FC00000) {
-        std::cerr << "SAUT INVALIDE ! pc=0x" << std::hex << pc
-            << " ra(r31)=0x" << regs[31] << "\n";
-        exit(1);
+    checkInterrupts();
+
+    if (pc != current_pc) {           // une exception a ete prise
+        return;                        // on ressort, le vecteur sera execute au prochain step
     }
 
     pc = next_pc;       // pc = $+4 (delay slot)
@@ -56,7 +56,12 @@ void CPU::step() {
 
         case 0x08: next_pc = regs[rs]; break;                          // JR
         case 0x09: setReg(rd, next_pc); next_pc = regs[rs]; break;     // JALR
-
+        case 0x0C: // SYSCALL
+            exception(EXC_SYSCALL);
+            break;
+        case 0x0D: // BREAK
+            exception(EXC_BREAK);
+            break;
         case 0x10: setReg(rd, hi); break;                              // MFHI
         case 0x11: hi = regs[rs]; break;                               // MTHI
         case 0x12: setReg(rd, lo); break;                              // MFLO
@@ -125,16 +130,34 @@ void CPU::step() {
 
     case 0x08: setReg(rt, regs[rs] + (s16)imm); break;                 // ADDI
     case 0x09: setReg(rt, regs[rs] + (s16)imm); break;                 // ADDIU
-
     case 0x10: { // COP0
-        switch (rs) {
-        case 0x00: setReg(rt, cop0_regs[rd]); break;                   // MFC0
-        case 0x04: cop0_regs[rd] = regs[rt]; break;                    // MTC0
-        default:
-            std::cerr << "Unknown COP0 instruction: 0x" << std::hex << rs << "\n";
+        if (rs & 0x10) {
+            // Bit 4 de rs leve => operation coprocesseur (RFE et cie)
+            u32 cop_funct = instr & 0x3F;
+            if (cop_funct == 0x10) { // RFE : Return From Exception
+                // Depile la pile de mode de SR : decale les bits 0-5
+                // de 2 vers la DROITE (previous -> current).
+                u32 sr = cop0_regs[COP0_SR];
+                u32 mode = sr & 0x3F;
+                sr &= ~0xF;                 // efface bits 0-3
+                sr |= (mode >> 2) & 0xF;    // recopie prev/old vers current/prev
+                cop0_regs[COP0_SR] = sr;
+            }
+            else {
+                std::cerr << "COP0 op inconnue, funct: 0x" << std::hex << cop_funct << "\n";
+            }
+        }
+        else {
+            // Bit 4 a 0 => transfert de registre (MFC0 / MTC0)
+            switch (rs) {
+            case 0x00: setReg(rt, cop0_regs[rd]); break;  // MFC0 : COP0[rd] -> rt
+            case 0x04: cop0_regs[rd] = regs[rt];  break;  // MTC0 : rt -> COP0[rd]
+            default:
+                std::cerr << "Unknown COP0 instruction: 0x" << std::hex << rs << "\n";
+            }
         }
         break;
-    }   // <-- ACCOLADE qui manquait : ferme le case COP0
+    }  // <-- ACCOLADE qui manquait : ferme le case COP0
 
     case 0x0A: setReg(rt, ((s32)regs[rs] < (s32)(s16)imm) ? 1u : 0u); break; // SLTI
     case 0x0B: setReg(rt, (regs[rs] < (u32)(s32)(s16)imm) ? 1u : 0u); break; // SLTIU
@@ -165,4 +188,74 @@ void CPU::step() {
     }
 
     regs[0] = 0; // le registre zero vaut toujours 0
+}
+
+void CPU::exception(u32 cause) {
+    u32 handler;
+
+    // 1) SR (Status Register) : le vrai hardware a une "pile" de 3 paires
+    //    de bits (bits 0-5). A l'entree d'une exception, on decale ces
+    //    bits de 2 vers la gauche (on "empile" un nouveau contexte avec
+    //    interruptions desactivees). Les bits 6+ sont preserves.
+    u32 sr = cop0_regs[COP0_SR];
+
+    // Le vecteur depend du bit BEV (bit 22) de SR :
+    //   BEV=0 -> 0x80000080 (handler en RAM, cas normal)
+    //   BEV=1 -> 0xBFC00180 (handler en ROM/BIOS)
+    handler = (sr & (1 << 22)) ? 0xBFC00180 : 0x80000080;
+
+    // Decalage de la pile de mode (bits 0-5), en preservant le reste.
+    u32 mode = sr & 0x3F;              // les 6 bits de la pile
+    sr &= ~0x3F;                       // on les efface
+    sr |= (mode << 2) & 0x3F;          // on les redecale de 2 (en restant sur 6 bits)
+    cop0_regs[COP0_SR] = sr;
+
+    // 2) CAUSE : ecrire le code de cause dans les bits 2-6.
+    u32 causeReg = cop0_regs[COP0_CAUSE];
+    causeReg &= ~0x7C;                 // efface les bits 2-6 (ExcCode)
+    causeReg |= (cause << 2) & 0x7C;   // ecrit le nouveau code
+    cop0_regs[COP0_CAUSE] = causeReg;
+
+    // 3) EPC : sauvegarder l'adresse de retour.
+    //    Cas simple : on sauve le PC courant. (Le cas du delay slot,
+    //    ou il faut sauver l'adresse du branchement et lever le bit BD
+    //    de CAUSE, sera gere plus tard.)
+    cop0_regs[COP0_EPC] = current_pc;
+
+    // 4) Sauter au vecteur d'exception.
+    //    Attention : on ecrit dans pc ET next_pc pour repartir proprement,
+    //    sans delay slot residuel.
+    pc = handler;
+    next_pc = handler + 4;
+}
+
+// ------------------------------------------------------------
+//  checkInterrupts() : a appeler a chaque step.
+//  Prend une interruption materielle si les conditions sont reunies.
+// ------------------------------------------------------------
+void CPU::checkInterrupts() {
+    // Y a-t-il une IRQ en attente cote bus (I_STAT & I_MASK) ?
+    bool irqPending = memoire.getIrq().pending();
+
+    // Reflete l'etat dans le bit 10 de CAUSE (IP2 = interruption materielle).
+    // Le hardware recopie la ligne d'interruption dans CAUSE.bit10.
+    if (irqPending) {
+        cop0_regs[COP0_CAUSE] |= (1 << 10);
+    }
+    else {
+        cop0_regs[COP0_CAUSE] &= ~(1 << 10);
+    }
+
+    u32 sr = cop0_regs[COP0_SR];
+
+    // Conditions pour prendre l'interruption :
+    //   - IEc (bit 0 de SR) : interruptions globalement activees
+    //   - le bit de masque correspondant dans SR (bit 10 = IM2) est leve
+    //   - le bit correspondant dans CAUSE (bit 10 = IP2) est leve
+    bool globalEnable = sr & 0x1;
+    bool maskAndPending = (sr & cop0_regs[COP0_CAUSE] & 0xFF00) != 0;
+
+    if (globalEnable && maskAndPending) {
+        exception(EXC_INT);  // cause 0 = interruption
+    }
 }
