@@ -58,6 +58,11 @@ u32 Memoire::load32(u32 addr) {
         std::cout << "lecture sur DMA - adresse: 0x" << std::hex << addr << " : valeur: 0x" << std::hex << dma->read(addr) << "\n";
         return dma->read(addr);
     }
+    else if (addr >= 0x1F801100 && addr <= 0x1F80112F) {
+        static u32 fake_timer32 = 0;
+        fake_timer32 += 0x100;
+        return fake_timer32;
+    }
     else {
         std::cerr << "Read32 from unknown address: 0x" << std::hex << addr << "\n";
         return 0;
@@ -81,6 +86,11 @@ u16 Memoire::load16(u32 addr) {
     {
         //std::cout << "lecture sur I_MASK" << "\n";
         return irq.readStatus();
+    }
+    else if (addr >= 0x1F801100 && addr <= 0x1F80112F) {
+        static u16 fake_timer16 = 0;
+        fake_timer16 += 0x40;
+        return fake_timer16;
     }
     else if (addr >= 0x1F801C00 && addr < 0x1F801E00)
     {
@@ -110,6 +120,12 @@ u8 Memoire::load8(u32 addr) {
     else if(addr >= 0x1F000000 && addr < 0x1F080000)
     {
         return 0xFF;
+    }
+    else if (addr >= 0x1F801800 && addr <= 0x1F801803) {
+        if (addr == 0x1F801800) {
+            return 0x18; // Bit 3-4 à 1 : prêt / pas d'erreur critique
+        }
+        return 0x00;
     }
     else {
         std::cerr << "Read8 from unknown address: 0x" << std::hex << addr << "\n";
@@ -247,6 +263,9 @@ void Memoire::store8(u32 addr, u8 value) {
     else if (addr == 0x1F801C00 || addr == 0x1F801FFF)
     {
         //std::cout << "ecriture sur Timers I_STAT / I_MASK" << "\n";
+    }
+    else if (addr >= 0x1F801800 && addr <= 0x1F801803) {
+        // Commandes CD-ROM ignorées pour le moment
     }
     else {
         std::cerr << "Write8 to unknown address: 0x" << std::hex << addr << "\n";

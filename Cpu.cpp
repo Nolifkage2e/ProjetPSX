@@ -159,6 +159,7 @@ void CPU::step() {
         break;
     }  // <-- ACCOLADE qui manquait : ferme le case COP0
 
+
     case 0x0A: setReg(rt, ((s32)regs[rs] < (s32)(s16)imm) ? 1u : 0u); break; // SLTI
     case 0x0B: setReg(rt, (regs[rs] < (u32)(s32)(s16)imm) ? 1u : 0u); break; // SLTIU
     case 0x0C: setReg(rt, regs[rs] & imm); break;                      // ANDI
@@ -169,15 +170,81 @@ void CPU::step() {
         // --- LOADS : programment le slot en attente (delai d'un cycle) ---
     case 0x20: load_reg = rt; load_value = (s8)memoire.load8(regs[rs] + (s16)imm); break; // LB
     case 0x21: load_reg = rt; load_value = (s16)memoire.load16(regs[rs] + (s16)imm); break; // LH
+    case 0x22: { // LWL
+        u32 vaddr = regs[rs] + (s16)imm;
+        u32 aligned = vaddr & ~3;
+        u32 offset = vaddr & 3;
+        u32 mem = memoire.load32(aligned);
+
+        // Bypass : si une instruction précédente chargeait déjà ce registre, on fusionne avec la nouvelle valeur
+        u32 current_rt = (rt == pending_reg) ? pending_value : regs[rt];
+
+        switch (offset) {
+        case 0: load_value = (current_rt & 0x00FFFFFF) | (mem << 24); break;
+        case 1: load_value = (current_rt & 0x0000FFFF) | (mem << 16); break;
+        case 2: load_value = (current_rt & 0x000000FF) | (mem << 8);  break;
+        case 3: load_value = mem; break;
+        }
+        load_reg = rt;
+        break;
+    }
     case 0x23: load_reg = rt; load_value = memoire.load32(regs[rs] + (s16)imm); break;      // LW
     case 0x24: load_reg = rt; load_value = memoire.load8(regs[rs] + (s16)imm); break;      // LBU
     case 0x25: load_reg = rt; load_value = memoire.load16(regs[rs] + (s16)imm); break;      // LHU
+    case 0x26: { // LWR
+        u32 vaddr = regs[rs] + (s16)imm;
+        u32 aligned = vaddr & ~3;
+        u32 offset = vaddr & 3;
+        u32 mem = memoire.load32(aligned);
+
+        u32 current_rt = (rt == pending_reg) ? pending_value : regs[rt];
+
+        switch (offset) {
+        case 0: load_value = mem; break;
+        case 1: load_value = (current_rt & 0xFF000000) | (mem >> 8);  break;
+        case 2: load_value = (current_rt & 0xFFFF0000) | (mem >> 16); break;
+        case 3: load_value = (current_rt & 0xFFFFFF00) | (mem >> 24); break;
+        }
+        load_reg = rt;
+        break;
+    }
 
         // --- STORES : effet immediat ---
     case 0x28: if (!cacheIsolated()) memoire.store8(regs[rs] + (s16)imm, (u8)regs[rt]); break;  // SB
     case 0x29: if (!cacheIsolated()) memoire.store16(regs[rs] + (s16)imm, (u16)regs[rt]); break; // SH
-    case 0x2B: if (!cacheIsolated()) memoire.store32(regs[rs] + (s16)imm, regs[rt]); break;      // SW
-
+    case 0x2A: { // SWL
+        if (!cacheIsolated()) {
+            u32 vaddr = regs[rs] + (s16)imm;
+            u32 aligned = vaddr & ~3;
+            u32 offset = vaddr & 3;
+            u32 mem = memoire.load32(aligned);
+            u32 val = regs[rt];
+            switch (offset) {
+            case 0: memoire.store32(aligned, (mem & 0xFFFFFF00) | (val >> 24)); break;
+            case 1: memoire.store32(aligned, (mem & 0xFFFF0000) | (val >> 16)); break;
+            case 2: memoire.store32(aligned, (mem & 0xFF000000) | (val >> 8));  break;
+            case 3: memoire.store32(aligned, val); break;
+            }
+        }
+        break;
+    }
+    case 0x2B: if (!cacheIsolated()) memoire.store32(regs[rs] + (s16)imm, regs[rt]); break;     // SW
+    case 0x2E: { // SWR
+        if (!cacheIsolated()) {
+            u32 vaddr = regs[rs] + (s16)imm;
+            u32 aligned = vaddr & ~3;
+            u32 offset = vaddr & 3;
+            u32 mem = memoire.load32(aligned);
+            u32 val = regs[rt];
+            switch (offset) {
+            case 0: memoire.store32(aligned, val); break;
+            case 1: memoire.store32(aligned, (mem & 0x000000FF) | (val << 8));  break;
+            case 2: memoire.store32(aligned, (mem & 0x0000FFFF) | (val << 16)); break;
+            case 3: memoire.store32(aligned, (mem & 0x00FFFFFF) | (val << 24)); break;
+            }
+        }
+        break;
+    }
     default:
         std::cerr << "Unknown opcode: 0x" << std::hex << opcode << "\n";
     }

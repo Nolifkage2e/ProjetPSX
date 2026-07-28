@@ -55,4 +55,6 @@ public:
 
     void transferLinkedList(int channel);
     void transferOTC(int channel);
+    void transferBlock(int channel);
+    void transferImmediate(int channel);
 };

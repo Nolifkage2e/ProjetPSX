@@ -32,4 +32,5 @@ public:
     // Acces pour le debug futur (desassembleur, breakpoints...)
     Memoire& getMemoire() { return memoire; }
     CPU& getCpu() { return cpu; }
+    Gpu& getGpu() { return gpu; }
 };

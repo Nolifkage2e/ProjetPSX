@@ -1,26 +1,51 @@
 #include "Emulateur.h"
+#include "Ecran.h"
 #include <cstdio>
 #include <iostream>
 #include <iomanip>
-//#include <SDL.h>  
+#include <SDL.h>  
 
-int main() {
+int main(int argc, char* argv[]) {
     Emulateur emu;
     emu.loadBIOS("SCPH1001.BIN");
-    emu.run(100000000);   // les 1000 premieres instructions du BIOS
-    u32 pc = emu.getCpu().getPc();
-    std::cout << "PC final : 0x" << std::hex << pc << "\n\n";
+    Ecran ecran;
+    //emu.run(100000000);   // les 1000 premieres instructions du BIOS
+    //u32 pc = emu.getCpu().getPc();
+    //std::cout << "PC final : 0x" << std::hex << pc << "\n\n";
     
 
 
 
-    for (u32 addr = pc - 0x14; addr <= pc + 0x14; addr += 4) {
-        u32 instr = emu.getMemoire().load32(addr);
-        std::cout << "0x" << std::hex << addr << " : 0x"
-            << std::setw(8) << std::setfill('0') << instr << "\n";
-    }
+    //for (u32 addr = pc - 0x14; addr <= pc + 0x14; addr += 4) {
+     //   u32 instr = emu.getMemoire().load32(addr);
+       // std::cout << "0x" << std::hex << addr << " : 0x"
+      //      << std::setw(8) << std::setfill('0') << instr << "\n";
+   // }
 
-    std::cout << "a2 (compteur) : 0x" << std::hex << emu.getCpu().getReg(6) << "\n";
+    //std::cout << "a2 (compteur) : 0x" << std::hex << emu.getCpu().getReg(6) << "\n";
+
+    
+    if (!ecran.init()) return 1;
+
+    // --- TEST : remplir la VRAM d'un degrade pour valider l'affichage ---
+    // (a retirer une fois que le vrai rendu GP0 fonctionne)
+    //emu.getGpu().fillTestPattern();
+    //emu.getGpu().fillTestPattern();
+    // --- Boucle principale ---
+    bool running = true;
+    //emu.run(25000000);
+    
+    while (running) {
+        // 1. Emuler ~une frame d'instructions (approx. 1/60 s de CPU)
+        //emu.run(500000);
+        emu.run(1000000);
+
+        // 2. Afficher la VRAM
+        ecran.afficherVram(emu.getGpu().getVram());
+
+        // 3. Evenements (fermeture fenetre, Echap)
+        running = ecran.gererEvenements();
+    }
 
     return 0;
 }
