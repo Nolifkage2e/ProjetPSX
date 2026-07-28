@@ -1,7 +1,9 @@
 #include "Memoire.h"
+#include "Emulateur.h"
 #include <iostream>
 #include <cstdio>
 #include <algorithm>
+#include "Dma.h" 
 
 
 static const u32 REGION_MASK[8] = {
@@ -49,12 +51,12 @@ u32 Memoire::load32(u32 addr) {
     }
     else if (addr >= DMA_BASE && addr < DMA_END)
     {
-        std::cout << "lecture sur DMA - adresse: 0x" << std::hex << addr << " : valuer: 0x" << std::hex << dma.read(addr) <<"\n";
-        return dma.read(addr);
+        std::cout << "lecture sur DMA - adresse: 0x" << std::hex << addr << " : valeur: 0x" << std::hex << dma->read(addr) <<"\n";
+        return dma->read(addr);
     }
     else if (addr == DPCR_ADDR || addr == DICR_ADDR) {
-        std::cout << "lecture sur DMA - adresse: 0x" << std::hex << addr << " : valuer: 0x" << std::hex << dma.read(addr) << "\n";
-        return dma.read(addr);
+        std::cout << "lecture sur DMA - adresse: 0x" << std::hex << addr << " : valeur: 0x" << std::hex << dma->read(addr) << "\n";
+        return dma->read(addr);
     }
     else {
         std::cerr << "Read32 from unknown address: 0x" << std::hex << addr << "\n";
@@ -174,11 +176,11 @@ void Memoire::store32(u32 addr, u32 value) {
     else if (addr >= DMA_BASE && addr < DMA_END)
     {
         std::cout << "ecriture sur DMA - adresse: 0x" << std::hex << addr << " valeur: 0x" << std::hex << value <<"\n";
-        dma.write(addr, value);
+        dma->write(addr, value);
     }
     else if (addr == DPCR_ADDR || addr == DICR_ADDR) {
         std::cout << "ecriture sur DMA - adresse: 0x" << std::hex << addr << " valeur: 0x" << std::hex << value << "\n";
-        dma.write(addr, value);
+        dma->write(addr, value);
     }
     else {
         std::cerr << "Write32 to unknown address: 0x" << std::hex << addr << "\n";

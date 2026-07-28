@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "Memoire.h"
+//#include "Emulateur.h"
 #include <array>
 
 constexpr int RA = 31;  // registre "return address"
@@ -20,6 +21,9 @@ class CPU {
     // Registres speciaux multiplication/division
     u32 hi = 0;
     u32 lo = 0;
+
+    u32 load_reg = 0;      // quel registre (0 = aucun, car r0 ignore les writes)
+    u32 load_value = 0;
 
     Memoire& memoire;
 

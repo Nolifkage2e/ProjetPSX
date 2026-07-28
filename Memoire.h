@@ -3,10 +3,10 @@
 #include "common.h"
 #include "Gpu.h"
 #include "Interruptions.h"
-#include "Dma.h"
 #include <array>
 #include <string>
 #include <vector>
+//#include "Emulateur.h"
 
 // Constantes memoire
 constexpr size_t RAM_SIZE = 2 * 1024 * 1024;  // 2 MB
@@ -15,16 +15,18 @@ constexpr u32    BIOS_START = 0x1FC00000;
 
 struct InterruptState { u32 status = 0; u32 mask = 0; };
 
+class Dma;
+
 class Memoire {
     std::vector<u8> ram;
     std::vector<u8> bios;
     std::array<u16, 0x200> spu_regs{};
     Interruptions irq;
     Gpu gpu;
-    Dma dma;
+    Dma* dma = nullptr;
 
 public:
-    Dma& getDma() { return dma; }
+    void setDma(Dma* d) { dma = d; }   
     Interruptions& getIrq() { return irq; }
     Memoire() : ram(RAM_SIZE, 0), bios(BIOS_SIZE, 0) {}
     // Lectures : l'adresse est TOUJOURS sur 32 bits,

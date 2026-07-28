@@ -2,17 +2,23 @@
 
 #include "common.h"
 #include "Memoire.h"
+#include "Dma.h"
 #include "Cpu.h"
 #include <string>
 
 class Emulateur {
     Memoire memoire;
+    Gpu     gpu;
+    Dma     dma;
     CPU cpu;
 
     bool running = false;
 
+    u64 vblank_counter = 0;
+
 public:
-    Emulateur() : cpu(memoire) {}
+    Emulateur();
+    Dma& getDma() { return dma; }
 
     // Chargement
     void loadBIOS(const std::string& path);

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "common.h"
+//#include "Memoire.h"
+#include "Gpu.h"
 #include <array>
 
 // Controleur DMA de la PS1.
@@ -17,6 +19,8 @@
 //
 // Canaux : 0=MDECin 1=MDECout 2=GPU 3=CDROM 4=SPU 5=PIO 6=OTC
 
+class Memoire;
+
 constexpr u32 DMA_BASE = 0x1F801080;
 constexpr u32 DMA_END = 0x1F801100;   // fin de la plage (exclue)
 
@@ -32,6 +36,9 @@ struct DmaChannel {
 
 class Dma {
     std::array<DmaChannel, 7> channels{};
+    Memoire& memoire;
+    Gpu& gpu;
+    
 
     // Registres globaux. DPCR a une valeur de reset non nulle sur le
     // vrai hardware (0x07654321), le BIOS s'attend a la relire.
@@ -39,9 +46,13 @@ class Dma {
     u32 dicr = 0;
 
 public:
+    Dma(Memoire& mem, Gpu& g) : memoire(mem), gpu(g) {}
     // Lecture d'un registre DMA (adresse deja masquee par Memoire).
     u32 read(u32 addr);
 
     // Ecriture d'un registre DMA.
     void write(u32 addr, u32 value);
+
+    void transferLinkedList(int channel);
+    void transferOTC(int channel);
 };
