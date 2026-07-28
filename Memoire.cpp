@@ -74,12 +74,12 @@ u16 Memoire::load16(u32 addr) {
     }
     else if (addr == IRQ_STAT_ADDR)
     {
-        std::cout << "lecture sur I_STAT" << "\n";
+        //std::cout << "lecture sur I_STAT" << "\n";
         return irq.readStatus();
     }
     else if (addr == IRQ_MASK_ADDR)
     {
-        std::cout << "lecture sur I_MASK" << "\n";
+        //std::cout << "lecture sur I_MASK" << "\n";
         return irq.readStatus();
     }
     else if (addr >= 0x1F801C00 && addr < 0x1F801E00)
