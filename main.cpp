@@ -44,15 +44,11 @@ int main(int argc, char* argv[]) {
     while (running) {
         // 1. Emuler ~une frame d'instructions (approx. 1/60 s de CPU)
    
-        emu.run(1000000);
-
-        u32 pc = emu.getCpu().getPc();
-        
-
-        // 2. Afficher la VRAM
-        ecran.afficherVram(emu.getGpu().getVram());
-
-        // 3. Evenements (fermeture fenetre, Echap)
+        emu.run(564480);                    // petits paquets
+        if (emu.frameePrete()) {           // affiche seulement quand une frame est finie
+            ecran.afficherVram(emu.getGpu().getVram());
+            emu.resetFramePrete();
+        }
         running = ecran.gererEvenements();
     }
 

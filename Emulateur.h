@@ -16,6 +16,8 @@ class Emulateur {
 
     u64 vblank_counter = 0;
 
+    bool frame_prete = false;
+
 public:
     Emulateur();
     Dma& getDma() { return dma; }
@@ -28,6 +30,10 @@ public:
     void run(u64 steps);   // execute un nombre fixe d'instructions
     void runForever();     // boucle jusqu'a stop() (Ctrl+C pour quitter)
     void stop();
+    bool frameePrete();
+    void resetFramePrete();
+
+    
 
     // Acces pour le debug futur (desassembleur, breakpoints...)
     Memoire& getMemoire() { return memoire; }

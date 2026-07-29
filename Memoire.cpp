@@ -100,10 +100,10 @@ u16 Memoire::load16(u32 addr) {
     {
         if (addr == 0x1F801DAE) {  
             u16 spucnt = spu_regs[(0x1F801DAA - 0x1F801C00) >> 1];
-            std::cout << "lecture dans le registre SPU: 0x" << std::hex << ((0x1F801DAA - 0x1F801C00) >> 1) << " valeur : 0x" << std::hex <<(spucnt & 0x3F) << "\n";
+            //std::cout << "lecture dans le registre SPU: 0x" << std::hex << ((0x1F801DAA - 0x1F801C00) >> 1) << " valeur : 0x" << std::hex <<(spucnt & 0x3F) << "\n";
             return spucnt & 0x3F;
         }
-        std::cout << "lecture dans le registre SPU: 0x" << std::hex << ((addr - 0x1F801C00) >> 1) << " valeur : 0x" << std::hex << (spu_regs[(addr - 0x1F801C00) >> 1]) << "\n";
+        //std::cout << "lecture dans le registre SPU: 0x" << std::hex << ((addr - 0x1F801C00) >> 1) << " valeur : 0x" << std::hex << (spu_regs[(addr - 0x1F801C00) >> 1]) << "\n";
         return spu_regs[(addr - 0x1F801C00) >> 1];
 
     }
@@ -157,7 +157,7 @@ void Memoire::store32(u32 addr, u32 value) {
     }
     else if (addr >= 0x1F801C00 && addr <= 0x1F801FFF)
     {
-        std::cout << "ecriture sur SPU" << "\n";
+        //std::cout << "ecriture sur SPU" << "\n";
     }
     else if (addr >= 0x1F802000 && addr <= 0x1F80207F)
     {
@@ -215,7 +215,7 @@ void Memoire::store16(u32 addr, u16 value) {
     }
     else if (addr >= 0x1F801C00 && addr <= 0x1F801FFF)
     {
-        std::cout << "ecriture sur SPU" << "\n";
+        //std::cout << "ecriture sur SPU" << "\n";
     }
     else if (addr >= 0x1F802000 && addr <= 0x1F80207F)
     {
@@ -255,7 +255,7 @@ void Memoire::store8(u32 addr, u8 value) {
     }
     else if (addr >= 0x1F801C00 && addr <= 0x1F801FFF)
     {
-        std::cout << "ecriture sur SPU" << "\n";
+        //std::cout << "ecriture sur SPU" << "\n";
     }
     else if (addr >= 0x1F802000 && addr <= 0x1F80207F)
     {

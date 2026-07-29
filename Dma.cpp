@@ -110,7 +110,8 @@ void Dma::transferLinkedList(int channel) {
 
     while (true) {
         u32 header = memoire.load32(addr);
-        u32 count = header >> 24;          // nombre de mots de commande
+        u32 count = header >> 24;   
+       
 
         // Envoyer les 'count' mots suivants au GP0
         for (u32 i = 0; i < count; i++) {

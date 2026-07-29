@@ -3,6 +3,7 @@
 #include "common.h"
 #include <SDL.h>
 
+
 // Gere la fenetre SDL et l'affichage de la VRAM.
 // Separe du GPU : le GPU produit des pixels, Ecran les montre.
 class Ecran {

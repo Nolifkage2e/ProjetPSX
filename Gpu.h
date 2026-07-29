@@ -30,10 +30,19 @@ class Gpu {
     u16 display_vram_x = 0;
     u16 display_vram_y = 0;
 
+    u16 texpage_x = 0;   // coin X de la page de texture en VRAM (multiple de 64)
+    u16 texpage_y = 0;   // coin Y de la page (0 ou 256)
+    u8  tex_depth = 0;   // 0 = 4bit CLUT, 1 = 8bit CLUT, 2 = 15bit direct
+    u16 clut_x = 0;   // position de la palette (CLUT) en VRAM
+    u16 clut_y = 0;
+
     bool gp0_transfer = false;  // sommes-nous en train de recevoir des pixels ?
     int  transfer_x = 0, transfer_y = 0;
     int  transfer_w = 0, transfer_h = 0;
     int  transfer_cx = 0, transfer_cy = 0;// position courante dans la zone
+
+    u32 transfer_words_total = 0;
+    u32 transfer_words_recus = 0;
 
     // --- Rasterizer (dessin dans la VRAM) ---
     void fillRectangle(u32 color, u16 x, u16 y, u16 w, u16 h);
@@ -42,6 +51,25 @@ class Gpu {
     // Convertit une couleur 24 bits (0xBBGGRR) en 16 bits BGR555
     static u16 to555(u32 color24);
     static u32 calculateGp0Needed(u32 command_word);
+
+    u16 lireTexel(int u, int v);
+
+    // Rasterise un triangle TEXTURE (interpolation barycentrique des u,v)
+    void drawTriangleTexture(int x0, int y0, int u0, int v0,
+        int x1, int y1, int u1, int v1,
+        int x2, int y2, int u2, int v2);
+
+    void drawTriangleGouraudTexture(
+        int x0, int y0, int u0, int v0, u32 c0,
+        int x1, int y1, int u1, int v1, u32 c1,
+        int x2, int y2, int u2, int v2, u32 c2);
+
+    void drawTriangleGouraud(int x0, int y0, u32 c0, int x1, int y1, u32 c1, int x2, int y2, u32 c2);
+
+    void drawRectTexture(int x, int y, int w, int h,
+        int u, int v, u32 couleur, bool is_raw);
+
+
 public:
     Gpu() : vram(VRAM_WIDTH* VRAM_HEIGHT, 0) {}
 

@@ -21,7 +21,8 @@ void Emulateur::run(u64 steps) {
         cpu.step();
         if (++vblank_counter >= 564480) {
             vblank_counter = 0;
-            memoire.getIrq().request(0);   // lève le bit 0 (VBlank) dans I_STAT
+            memoire.getIrq().request(0);
+            frame_prete = true;      // ? signale qu'une frame est complète
         }
     }
     running = false;
@@ -36,4 +37,14 @@ void Emulateur::runForever() {
 
 void Emulateur::stop() {
     running = false;
+}
+
+bool Emulateur::frameePrete() 
+{
+    return frame_prete;
+}
+
+void Emulateur::resetFramePrete() 
+{
+    frame_prete = false;
 }
