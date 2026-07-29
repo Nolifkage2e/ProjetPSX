@@ -41,22 +41,26 @@ u32 Memoire::load32(u32 addr) {
     }
     else if (addr == GP0_ADDR)
     {
-        std::cout << "lecture sur gp0 " << gpu.readData() << "\n";
+        u32 data = gpu.readData();
+        std::cout << "lecture sur gp0 " << addr << "\n";
         return gpu.readData();
     }
     else if (addr == GP1_ADDR)
     {
-        std::cout << "lecture sur gp1 " << gpu.readStatus() << "\n";
-        return gpu.readStatus();
+        u32 status = gpu.readStatus();
+        std::cout << "lecture sur gp1 " << status << "\n";
+        return status;
     }
     else if (addr >= DMA_BASE && addr < DMA_END)
     {
-        std::cout << "lecture sur DMA - adresse: 0x" << std::hex << addr << " : valeur: 0x" << std::hex << dma->read(addr) <<"\n";
-        return dma->read(addr);
+        u32 val = dma->read(addr);
+        std::cout << "lecture sur DMA - adresse: 0x" << std::hex << addr << " : valeur: 0x" << std::hex << val <<"\n";
+        return val;
     }
     else if (addr == DPCR_ADDR || addr == DICR_ADDR) {
-        std::cout << "lecture sur DMA - adresse: 0x" << std::hex << addr << " : valeur: 0x" << std::hex << dma->read(addr) << "\n";
-        return dma->read(addr);
+        u32 val = dma->read(addr);
+        std::cout << "lecture sur DMA - adresse: 0x" << std::hex << addr << " : valeur: 0x" << std::hex << val << "\n";
+        return val;
     }
     else if (addr >= 0x1F801100 && addr <= 0x1F80112F) {
         static u32 fake_timer32 = 0;
@@ -122,6 +126,7 @@ u8 Memoire::load8(u32 addr) {
         return 0xFF;
     }
     else if (addr >= 0x1F801800 && addr <= 0x1F801803) {
+        std::cout << "CDROM read  0x" << std::hex << addr << "\n";
         if (addr == 0x1F801800) {
             return 0x18; // Bit 3-4 à 1 : prêt / pas d'erreur critique
         }
@@ -265,7 +270,8 @@ void Memoire::store8(u32 addr, u8 value) {
         //std::cout << "ecriture sur Timers I_STAT / I_MASK" << "\n";
     }
     else if (addr >= 0x1F801800 && addr <= 0x1F801803) {
-        // Commandes CD-ROM ignorées pour le moment
+        std::cout << "CDROM write 0x" << std::hex << addr
+            << " = 0x" << (int)value << "\n";
     }
     else {
         std::cerr << "Write8 to unknown address: 0x" << std::hex << addr << "\n";

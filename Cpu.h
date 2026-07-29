@@ -25,6 +25,10 @@ class CPU {
 
     u32 load_reg = 0;      // quel registre (0 = aucun, car r0 ignore les writes)
     u32 load_value = 0;
+    int stepCount = 0;
+
+    bool in_delay_slot = false;
+    bool branch_taken = false;
 
     Memoire& memoire;
 

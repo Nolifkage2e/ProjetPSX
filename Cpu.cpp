@@ -3,16 +3,21 @@
 
 void CPU::step() {
     current_pc = pc;
-    u32 instr = memoire.load32(pc);
 
     checkInterrupts();
-
-    if (pc != current_pc) {           // une exception a ete prise
-        return;                        // on ressort, le vecteur sera execute au prochain step
+    if (pc != current_pc) {
+        // une exception vient d'être prise : on sort, le vecteur s'exécutera au prochain step
+        return;
     }
 
-    pc = next_pc;       // pc = $+4 (delay slot)
-    next_pc += 4;       // next_pc = $+8
+    u32 instr = memoire.load32(pc);
+
+    in_delay_slot = branch_taken;
+    branch_taken = false;
+
+    pc = next_pc;
+    next_pc += 4;      // next_pc = $+8
+
 
     // --- LOAD DELAY SLOT ---
     // Le load du step precedent devient disponible MAINTENANT.
@@ -54,8 +59,8 @@ void CPU::step() {
         case 0x06: setReg(rd, regs[rt] >> (regs[rs] & 0x1F)); break;   // SRLV
         case 0x07: setReg(rd, (s32)regs[rt] >> (regs[rs] & 0x1F)); break; // SRAV
 
-        case 0x08: next_pc = regs[rs]; break;                          // JR
-        case 0x09: setReg(rd, next_pc); next_pc = regs[rs]; break;     // JALR
+        case 0x08: next_pc = regs[rs]; branch_taken = true; break;                          // JR
+        case 0x09: setReg(rd, next_pc); next_pc = regs[rs]; branch_taken = true; break;     // JALR
         case 0x0C: // SYSCALL
             exception(EXC_SYSCALL);
             break;
@@ -106,28 +111,51 @@ void CPU::step() {
         break;
     }
 
-    case 0x01: { // BLTZ/BGEZ/BLTZAL/BGEZAL selon rt
+    case 0x01: {
         bool ge = ((s32)regs[rs] >= 0);
         bool link = (rt == 0x10 || rt == 0x11);
         bool take = (rt & 1) ? ge : !ge;
         if (link) setReg(RA, next_pc);
-        if (take) next_pc = branch_dest;
+        if (take) { next_pc = branch_dest; branch_taken = true; }
         break;
     }
 
     case 0x02: // J
+    {
         next_pc = (pc & 0xF0000000) | (imm26 << 2);
+        branch_taken = true;
         break;
-    case 0x03: // JAL
+    }
+    case 0x03: { // JAL
         setReg(RA, next_pc);
         next_pc = (pc & 0xF0000000) | (imm26 << 2);
+        branch_taken = true;
         break;
+    }
 
-    case 0x04: if (regs[rs] == regs[rt]) next_pc = branch_dest; break; // BEQ
-    case 0x05: if (regs[rs] != regs[rt]) next_pc = branch_dest; break; // BNE
-    case 0x06: if ((s32)regs[rs] <= 0)   next_pc = branch_dest; break; // BLEZ
-    case 0x07: if ((s32)regs[rs] > 0)    next_pc = branch_dest; break; // BGTZ
-
+    case 0x04:
+        if (regs[rs] == regs[rt])
+        { 
+            next_pc = branch_dest;
+            branch_taken = true; 
+        } 
+        break; // BEQ
+    case 0x05:
+        if (regs[rs] != regs[rt]) {
+            next_pc = branch_dest;
+            branch_taken = true;
+        }
+        break; // BNE
+    case 0x06:
+        if ((s32)regs[rs] <= 0)
+        { next_pc = branch_dest;
+        branch_taken = true; }
+        break;   // BLEZ
+    case 0x07:
+        if ((s32)regs[rs] > 0)
+        { next_pc = branch_dest;
+        branch_taken = true; }
+        break;  // BGTZ
     case 0x08: setReg(rt, regs[rs] + (s16)imm); break;                 // ADDI
     case 0x09: setReg(rt, regs[rs] + (s16)imm); break;                 // ADDIU
     case 0x10: { // COP0
@@ -258,40 +286,35 @@ void CPU::step() {
 }
 
 void CPU::exception(u32 cause) {
-    u32 handler;
+    std::cout << "EXC cause=" << std::hex << cause
+        << " SR_avant=0x" << cop0_regs[COP0_SR] << "\n";
 
-    // 1) SR (Status Register) : le vrai hardware a une "pile" de 3 paires
-    //    de bits (bits 0-5). A l'entree d'une exception, on decale ces
-    //    bits de 2 vers la gauche (on "empile" un nouveau contexte avec
-    //    interruptions desactivees). Les bits 6+ sont preserves.
     u32 sr = cop0_regs[COP0_SR];
+    u32 handler = (sr & (1 << 22)) ? 0xBFC00180 : 0x80000080;
 
-    // Le vecteur depend du bit BEV (bit 22) de SR :
-    //   BEV=0 -> 0x80000080 (handler en RAM, cas normal)
-    //   BEV=1 -> 0xBFC00180 (handler en ROM/BIOS)
-    handler = (sr & (1 << 22)) ? 0xBFC00180 : 0x80000080;
-
-    // Decalage de la pile de mode (bits 0-5), en preservant le reste.
-    u32 mode = sr & 0x3F;              // les 6 bits de la pile
-    sr &= ~0x3F;                       // on les efface
-    sr |= (mode << 2) & 0x3F;          // on les redecale de 2 (en restant sur 6 bits)
+    // Pile de mode
+    u32 mode = sr & 0x3F;
+    sr &= ~0x3F;
+    sr |= (mode << 2) & 0x3F;
     cop0_regs[COP0_SR] = sr;
 
-    // 2) CAUSE : ecrire le code de cause dans les bits 2-6.
+    // CAUSE : code de cause
     u32 causeReg = cop0_regs[COP0_CAUSE];
-    causeReg &= ~0x7C;                 // efface les bits 2-6 (ExcCode)
-    causeReg |= (cause << 2) & 0x7C;   // ecrit le nouveau code
+    causeReg &= ~0x7C;
+    causeReg |= (cause << 2) & 0x7C;
+
+    // --- GESTION DU DELAY SLOT ---
+    u32 epc = current_pc;
+    if (in_delay_slot) {
+        epc -= 4;                    // EPC pointe sur le BRANCHEMENT
+        causeReg |= (1u << 31);      // bit BD : "l'exception était dans un delay slot"
+    }
+    else {
+        causeReg &= ~(1u << 31);
+    }
     cop0_regs[COP0_CAUSE] = causeReg;
+    cop0_regs[COP0_EPC] = epc;
 
-    // 3) EPC : sauvegarder l'adresse de retour.
-    //    Cas simple : on sauve le PC courant. (Le cas du delay slot,
-    //    ou il faut sauver l'adresse du branchement et lever le bit BD
-    //    de CAUSE, sera gere plus tard.)
-    cop0_regs[COP0_EPC] = current_pc;
-
-    // 4) Sauter au vecteur d'exception.
-    //    Attention : on ecrit dans pc ET next_pc pour repartir proprement,
-    //    sans delay slot residuel.
     pc = handler;
     next_pc = handler + 4;
 }

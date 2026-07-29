@@ -24,6 +24,8 @@ class Gpu {
 
     u32 gpu_status = 0x14000000; // Statut par défaut (Ready, Display Off)
 
+    u32 scanline = 0;
+
     // Coordonnées du coin supérieur gauche de l'écran dans la VRAM
     u16 display_vram_x = 0;
     u16 display_vram_y = 0;
@@ -42,6 +44,8 @@ class Gpu {
     static u32 calculateGp0Needed(u32 command_word);
 public:
     Gpu() : vram(VRAM_WIDTH* VRAM_HEIGHT, 0) {}
+
+    void tick(u32 cycles) { scanline = (scanline + cycles / 2160) % 263; }
 
     u32 readStatus();
 

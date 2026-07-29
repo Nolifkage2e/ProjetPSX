@@ -33,12 +33,21 @@ int main(int argc, char* argv[]) {
     //emu.getGpu().fillTestPattern();
     // --- Boucle principale ---
     bool running = true;
-    //emu.run(25000000);
+    //emu.run(27700000);
+    //u32 pc = emu.getCpu().getPc();
+    //std::cout << "\nPC : 0x" << std::hex << pc << "\n";
+    //for (u32 a = pc - 0x20; a <= pc + 0x20; a += 4)
+        //std::cout << "0x" << a << " : 0x" << std::setw(8) << std::setfill('0')
+        //<< emu.getMemoire().load32(a) << "\n";
+
     
     while (running) {
         // 1. Emuler ~une frame d'instructions (approx. 1/60 s de CPU)
-        //emu.run(500000);
+   
         emu.run(1000000);
+
+        u32 pc = emu.getCpu().getPc();
+        
 
         // 2. Afficher la VRAM
         ecran.afficherVram(emu.getGpu().getVram());

@@ -138,47 +138,20 @@ u32 Gpu::calculateGp0Needed(u32 command_word) {
 }
 
 u32 Gpu::readStatus() {
-    u32 status = gpu_status;
+    static u64 n = 0;
+    n++;
+    u32 status = gpu_status | (1 << 26) | (1 << 27) | (1 << 28);
 
-    // Masques pour indiquer au CPU/DMA que le GPU est prêt
-    status |= (1 << 26); // Prêt à recevoir une commande GP0
-    status |= (1 << 27); // Prêt à envoyer des données VRAM
-    status |= (1 << 28); // Prêt à recevoir un bloc DMA
+    // Le BIOS attend que le bit 31 bascule (VSync). On alterne à chaque lecture.
+    static bool toggle = false;
+    toggle = !toggle;
+    if (toggle) status |= (1u << 31);
+    else        status &= ~(1u << 31);
 
-    // --- SIMULATION DU MATÉRIEL ---
-    // Fait basculer le bit 31 (Odd/Even scanline ou GPU Busy) 
-    // et le bit 19 (Vertical Interlace) à chaque lecture.
-    // Cela trompe le BIOS en lui faisant croire que le faisceau 
-    // vidéo balaie l'écran et que le temps passe.
-    static bool hardware_toggle = false;
-    hardware_toggle = !hardware_toggle;
+    if (n % 1000 == 0)   // pas trop de spam
+        std::cout << "GPUSTAT lecture #" << std::dec << n
+        << " = 0x" << std::hex << status << "\n";
 
-    u32 dma_dir = (gpu_status >> 29) & 3;
-
-    if (dma_dir == 1) {
-        status |= (1 << 25); // FIFO : Toujours prêt (1)
-    }
-    else if (dma_dir == 2) {
-        status |= (1 << 25); // CPU vers GPU : Miroir du bit 28
-    }
-    else if (dma_dir == 3) {
-        status |= (1 << 25); // GPU vers CPU : Miroir du bit 27
-    }
-    else {
-        status &= ~(1 << 25); // Off (0)
-    }
-
-    static u64 global_read_ticks = 0;
-    global_read_ticks++;
-
-    if ((global_read_ticks / 10000) % 2 == 0) {
-        status |= (1 << 31);
-        status |= (1 << 19); // Ligne impaire
-    }
-    else {
-        status &= ~(1 << 31);
-        status &= ~(1 << 19); // Ligne paire
-    }
     return status;
 }
 
@@ -248,6 +221,12 @@ void Gpu::gp0(u32 value) {
 
     // Execution de la commande complète
     u32 cmd = gp0_command;
+
+    if (cmd >= 0x20 && cmd <= 0x3F) {
+        bool textured = (cmd >> 2) & 1;
+        std::cout << "POLY cmd=0x" << std::hex << cmd
+            << (textured ? " TEXTURÉ" : " uni") << "\n";
+    }
 
     if (cmd == 0x02) {
         // Fill Rectangle avec masques hardware PS1
