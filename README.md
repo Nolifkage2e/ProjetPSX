@@ -39,7 +39,7 @@ ou en désassemblant le BIOS à la main pour confronter les hypothèses à la r�
 Le résultat est un projet d'envergure et
 la démonstration d'un usage rigoureux des outils de demain.
 
-* - Dave-Hardens Odigé*
+* Dave-Hardens Odigé*
 *Étudiant à l'Université Laval au Baccalauréat en génie informatique*
 
 ---
