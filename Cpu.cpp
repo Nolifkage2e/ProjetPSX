@@ -3,6 +3,9 @@
 
 void CPU::step() {
     current_pc = pc;
+    memoire.setPcCourant(pc);
+
+    if (bp && bp->verifierExec(pc)) return;
 
     checkInterrupts();
     if (pc != current_pc) {

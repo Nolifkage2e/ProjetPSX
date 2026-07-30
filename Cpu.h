@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "Memoire.h"
+#include "Breakpoints.h"
 //#include "Emulateur.h"
 #include <array>
 
@@ -10,6 +11,7 @@ constexpr int RA = 31;  // registre "return address"
 class CPU {
     std::array<u32, 32> regs{};
     std::array<u32, 32> cop0_regs{};
+    Breakpoints* bp = nullptr;
 
     bool cacheIsolated() const { return (cop0_regs[12] & 0x10000) != 0; }
     // Schema pc/next_pc pour les branch delay slots :
@@ -57,5 +59,12 @@ public:
 
     // Verifie si une interruption materielle doit etre prise, et la prend.
     void checkInterrupts();
+
+    void setBreakpoints(Breakpoints* b) { bp = b; }
+
+    // Accesseurs pour le debogueur
+    u32 getHi()  const { return hi; }
+    u32 getLo()  const { return lo; }
+    u32 getCop0(int i) const { return cop0_regs[i]; }
 };
 

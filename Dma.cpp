@@ -162,10 +162,6 @@ void Dma::transferOTC(int channel) {
 }
 
 void Dma::transferBlock(int channel) {
-    channels[channel].chcr &= ~0x01000000;
-    channels[channel].chcr &= ~0x10000000;
-    return;
-
     u32 chcr = channels[channel].chcr;
     u32 bcr = channels[channel].bcr;
 

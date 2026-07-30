@@ -23,6 +23,7 @@ static u32 mask_region(u32 addr) {
 
 u32 Memoire::load32(u32 addr) {
     addr = mask_region(addr);
+    if (bp) bp->verifierAcces(addr, false, 0, pc_courant);
     if (addr < RAM_SIZE) {
         return *(u32*)&ram[addr];
     }
@@ -140,6 +141,7 @@ u8 Memoire::load8(u32 addr) {
 
 void Memoire::store32(u32 addr, u32 value) {
     addr = mask_region(addr);
+    if (bp) bp->verifierAcces(addr, true, value, pc_courant);
     if (addr < RAM_SIZE) {
         *(u32*)&ram[addr] = value;
     }

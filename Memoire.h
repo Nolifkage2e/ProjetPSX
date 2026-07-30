@@ -3,6 +3,7 @@
 #include "common.h"
 #include "Gpu.h"
 #include "Interruptions.h"
+#include "Breakpoints.h"
 #include <array>
 #include <string>
 #include <vector>
@@ -24,6 +25,8 @@ class Memoire {
     Interruptions irq;
     Gpu gpu;
     Dma* dma = nullptr;
+    Breakpoints* bp = nullptr;
+    u32 pc_courant = 0;
 
 public:
     void setDma(Dma* d) { dma = d; }   
@@ -43,4 +46,7 @@ public:
     // Chargement
     void loadBIOS(const std::string& filename);
     void loadTestProgram();
+
+    void setBreakpoints(Breakpoints* b) { bp = b; }
+    void setPcCourant(u32 pc) { pc_courant = pc; }
 };

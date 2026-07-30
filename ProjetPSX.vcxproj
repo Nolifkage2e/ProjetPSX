@@ -104,7 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\vclib\SDL2-devel-2.32.8-VC\SDL2-2.32.8\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>imgui;C:\vclib\SDL2-devel-2.32.8-VC\SDL2-2.32.8\include;imgui\backends</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -130,14 +130,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Breakpoints.h" />
     <ClInclude Include="common.h" />
     <ClInclude Include="Cpu.h" />
+    <ClInclude Include="Debogueur.h" />
+    <ClInclude Include="Desassembleur.h" />
     <ClInclude Include="Dma.h" />
     <ClInclude Include="Ecran.h" />
     <ClInclude Include="Emulateur.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="emu.h" />
     <ClInclude Include="Gpu.h" />
+    <ClInclude Include="imgui\imconfig.h" />
+    <ClInclude Include="imgui\imgui.h" />
+    <ClInclude Include="imgui\imgui_impl_sdl2.h" />
+    <ClInclude Include="imgui\imgui_impl_sdlrenderer2.h" />
+    <ClInclude Include="imgui\imgui_internal.h" />
+    <ClInclude Include="imgui\imstb_rectpack.h" />
+    <ClInclude Include="imgui\imstb_textedit.h" />
+    <ClInclude Include="imgui\imstb_truetype.h" />
     <ClInclude Include="Interruptions.h" />
     <ClInclude Include="Memoire.h" />
     <ClInclude Include="ProjetPSX.h" />
@@ -146,12 +157,21 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Cpu.cpp" />
+    <ClCompile Include="Debogueur.cpp" />
+    <ClCompile Include="Desassembleur.cpp" />
     <ClCompile Include="Dma.cpp" />
     <ClCompile Include="Ecran.cpp" />
     <ClCompile Include="emu.cpp" />
     <ClCompile Include="Emulateur.cpp" />
     <ClCompile Include="Gpu.cpp" />
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="imgui\imgui.cpp" />
+    <ClCompile Include="imgui\imgui_demo.cpp" />
+    <ClCompile Include="imgui\imgui_draw.cpp" />
+    <ClCompile Include="imgui\imgui_impl_sdl2.cpp" />
+    <ClCompile Include="imgui\imgui_impl_sdlrenderer2.cpp" />
+    <ClCompile Include="imgui\imgui_tables.cpp" />
+    <ClCompile Include="imgui\imgui_widgets.cpp" />
+    <ClCompile Include="main_debbug.cpp" />
     <ClCompile Include="Memoire.cpp" />
     <ClCompile Include="ProjetPSX.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

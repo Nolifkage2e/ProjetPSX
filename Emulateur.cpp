@@ -2,7 +2,8 @@
 #include <iostream>
 
 Emulateur::Emulateur() : dma(memoire, gpu), cpu(memoire) {
-    memoire.setDma(&dma);   // ? c'est LUI qu'on veut
+    memoire.setDma(&dma);
+    // ? c'est LUI qu'on veut
 }
 
 void Emulateur::loadBIOS(const std::string& path) {

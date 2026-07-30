@@ -4,6 +4,7 @@
 #include "Memoire.h"
 #include "Dma.h"
 #include "Cpu.h"
+#include "Breakpoints.h"
 #include <string>
 
 class Emulateur {
@@ -11,6 +12,8 @@ class Emulateur {
     Gpu     gpu;
     Dma     dma;
     CPU cpu;
+    Breakpoints breakpoints;
+
 
     bool running = false;
 
@@ -21,6 +24,7 @@ class Emulateur {
 public:
     Emulateur();
     Dma& getDma() { return dma; }
+    Breakpoints& getBreakpoints() { return breakpoints; }
 
     // Chargement
     void loadBIOS(const std::string& path);
