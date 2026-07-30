@@ -106,25 +106,33 @@ void Dma::write(u32 addr, u32 value) {
 }
 
 void Dma::transferLinkedList(int channel) {
+    
     u32 addr = channels[channel].madr & 0x1FFFFC;  // masque région + aligne sur 4
-
+    int securite = 0;
     while (true) {
-        u32 header = memoire.load32(addr);
-        u32 count = header >> 24;   
-       
+        if (++securite > 20000) break;
 
-        // Envoyer les 'count' mots suivants au GP0
-        for (u32 i = 0; i < count; i++) {
-            addr = (addr + 4) & 0x1FFFFC;
-            u32 command = memoire.load32(addr);
-            gpu.gp0(command);               // ← les commandes arrivent enfin au GPU !
+        if (addr >= RAM_SIZE) {       // hors RAM = liste corrompue
+            std::cerr << "LL addr invalide 0x" << std::hex << addr << "\n";
+            break;
         }
 
-        // Passer au nœud suivant
-        addr = header & 0x1FFFFF;           // 24 bits bas = pointeur suivant
+        u32 header = memoire.load32(addr);
+        u32 count = header >> 24;
 
-        // Marqueur de fin : le vrai hardware teste le bit 23
+        // Garde-fou : un count énorme est suspect
+        if (count > 16) {
+            std::cerr << "LL count suspect = " << std::dec << count
+                << " (header=0x" << std::hex << header << ")\n";
+        }
+
+        for (u32 i = 0; i < count; i++) {
+            addr = (addr + 4) & 0x1FFFFC;
+            gpu.gp0(memoire.load32(addr));
+        }
+
         if (header & 0x800000) break;
+        addr = header & 0x1FFFFC;
     }
 
     // Transfert termine : effacer les bits busy/start de CHCR
@@ -154,85 +162,84 @@ void Dma::transferOTC(int channel) {
 }
 
 void Dma::transferBlock(int channel) {
+    channels[channel].chcr &= ~0x01000000;
+    channels[channel].chcr &= ~0x10000000;
+    return;
+
     u32 chcr = channels[channel].chcr;
     u32 bcr = channels[channel].bcr;
 
-    // Décodage du registre BCR (Block Control Register)
     u32 block_size = bcr & 0xFFFF;
     u32 block_count = (bcr >> 16) & 0xFFFF;
 
-    // Cas particulier du hardware : si la taille ou le nombre vaut 0, cela signifie 0x10000 (65536)
-    if (block_size == 0)  block_size = 0x10000;
-    if (block_count == 0) block_count = 0x10000;
+    u32 mode = (chcr >> 9) & 3;
+    u32 total_words;
 
-    u32 total_words = block_size * block_count;
+    if (mode == 1) {
+        // SyncMode 1 : total = block_size * block_count.
+        // Un compte de 0 signifie "aucun bloc", pas 65536 !
+        if (block_count == 0) {
+            channels[channel].chcr &= ~0x01000000;
+            channels[channel].chcr &= ~0x10000000;
+            return;
+        }
+        total_words = block_size * block_count;
+    }
+    else {
+        // SyncMode 0 : un seul bloc, et la règle "0 = 0x10000" s'applique
+        total_words = (block_size == 0) ? 0x10000 : block_size;
+    }
 
-    // Récupération de l'adresse de départ dans la RAM (masquée et alignée sur 32 bits)
+    // Garde-fou : un transfert absurde est refuse
+    if (total_words > 0x40000) {   // > 256k mots = 1 Mo, impossible
+        std::cerr << "BLOCK suspect : " << std::dec << total_words
+            << " mots (BCR=0x" << std::hex << bcr << "), ignore\n";
+        channels[channel].chcr &= ~0x01000000;
+        channels[channel].chcr &= ~0x10000000;
+        return;
+    }
+
     u32 addr = channels[channel].madr & 0x1FFFFC;
-
-    // CHCR Bit 0 : Direction (0 = Périphérique -> RAM, 1 = RAM -> Périphérique)
     bool from_ram = (chcr & 1);
-
-    // CHCR Bit 1 : Pas de l'adresse (0 = +4 octets, 1 = -4 octets)
     int step = ((chcr >> 1) & 1) ? -4 : +4;
+
+    std::cout << "BLOCK canal " << std::dec << channel
+        << " MADR=0x" << std::hex << channels[channel].madr
+        << " BCR=0x" << bcr
+        << " (size=" << std::dec << block_size
+        << " count=" << block_count
+        << " total=" << total_words << ")"
+        << " dir=" << (chcr & 1) << "\n";
+    for (int k = 0; k < 4 && k < (int)total_words; k++) {
+        std::cout << "   mot[" << k << "] = 0x" << std::hex
+            << memoire.load32((addr + k * 4) & 0x1FFFFC) << "\n";
+    }
+
+    std::cout << "   (GPU en transfert=" << gpu.estEnTransfert()
+        << ", attend encore " << std::dec << gpu.motsRestants() << " mots)\n";
+
+
 
     for (u32 i = 0; i < total_words; i++) {
         if (from_ram) {
-            // --- RAM vers Périphérique ---
             u32 data = memoire.load32(addr);
-
-            switch (channel) {
-            case 2: // GPU (ex: envoi de textures / données de polygones)
-                gpu.gp0(data);
-                break;
-            case 0: // MDEC in
-                // mdec.write(data);
-                break;
-            case 4: // SPU
-                // spu.write(data);
-                break;
-            default:
-                std::cerr << "DMA Mode 1 RAM->Dev non géré sur canal " << channel << "\n";
-                break;
-            }
+            if (channel == 2) gpu.gp0(data);
+            // autres canaux à venir
         }
         else {
-            // --- Périphérique vers RAM ---
             u32 data = 0;
-
-            switch (channel) {
-            case 2: // GPU (ex: lecture de la VRAM / VRAM Read)
-                data = gpu.readData(); // À adapter selon ton API GPU
-                break;
-            case 3: // CD-ROM (lecture des secteurs du disque)
-                // data = cdrom.readFIFO();
-                break;
-            case 1: // MDEC out
-                // data = mdec.read();
-                break;
-            default:
-                std::cerr << "DMA Mode 1 Dev->RAM non géré sur canal " << channel << "\n";
-                break;
-            }
-
+            if (channel == 2) data = gpu.readData();
             memoire.store32(addr, data);
         }
-
-        // Avancer ou reculer l'adresse (avec wrap sur la mémoire de 2 Mo)
         addr = (addr + step) & 0x1FFFFC;
     }
 
-    // Mettre à jour MADR avec l'adresse finale
     channels[channel].madr = addr;
-
-    // Le hardware remet généralement le nombre de blocs restants à 0 à la fin
     channels[channel].bcr &= 0x0000FFFF;
-
-    // Transfert terminé : effacer les bits busy (24) et trigger (28)
     channels[channel].chcr &= ~0x01000000;
     channels[channel].chcr &= ~0x10000000;
 
-    // TODO: Déclencher une interruption dans DICR si activée pour ce canal
+    
 }
 
 void Dma::transferImmediate(int channel) {

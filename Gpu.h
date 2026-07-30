@@ -90,5 +90,8 @@ public:
 
     // Test : remplir la VRAM d'un degrade pour valider l'affichage
     void fillTestPattern();
+
+    bool estEnTransfert() const { return gp0_transfer; }
+    u32  motsRestants()   const { return gp0_transfer ? (transfer_words_total - transfer_words_recus) : 0; }
 };
 

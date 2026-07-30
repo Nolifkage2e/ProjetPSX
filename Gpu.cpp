@@ -398,19 +398,16 @@ void Gpu::gp0(u32 value) {
     if (gp0_transfer) {
         for (int k = 0; k < 2; k++) {
             u16 pixel = (value >> (k * 16)) & 0xFFFF;
-            if (transfer_cy < transfer_h) {      // ne pas écrire hors zone
-                vramSet(transfer_x + transfer_cx, transfer_y + transfer_cy, pixel);
-            }
+            vramSet(transfer_x + transfer_cx, transfer_y + transfer_cy, pixel);
             transfer_cx++;
             if (transfer_cx >= transfer_w) {
                 transfer_cx = 0;
                 transfer_cy++;
+                if (transfer_cy >= transfer_h) {
+                    gp0_transfer = false;
+                    return;              // ? sortie dès que la zone est pleine
+                }
             }
-        }
-        transfer_words_recus++;
-        // On sort quand TOUS les mots (padding inclus) ont été reçus
-        if (transfer_words_recus >= transfer_words_total) {
-            gp0_transfer = false;
         }
         return;
     }
@@ -475,37 +472,26 @@ void Gpu::gp0(u32 value) {
         u16 h = (gp0_buffer[2] >> 16) & 0x1FF;
         fillRectangle(color, x, y, w, h);
     }
-    if (cmd == 0xA0) {
+    else if (cmd == 0xA0) {
+        // Destination dans la VRAM (mot 1)
         transfer_x = gp0_buffer[1] & 0x3FF;
         transfer_y = (gp0_buffer[1] >> 16) & 0x1FF;
+        // Taille de la zone (mot 2)
         transfer_w = gp0_buffer[2] & 0x3FF;
         transfer_h = (gp0_buffer[2] >> 16) & 0x1FF;
-        if (transfer_w == 0) transfer_w = 0x400;   // 0 signifie la taille max
+        if (transfer_w == 0) transfer_w = 0x400;
         if (transfer_h == 0) transfer_h = 0x200;
 
-        std::cout << "A0 dest=(" << std::dec << transfer_x << "," << transfer_y
-            << ") " << transfer_w << "x" << transfer_h
-            << " mots=" << ((transfer_w * transfer_h + 1) / 2)
-            << " [buf1=0x" << std::hex << gp0_buffer[1]
-            << " buf2=0x" << gp0_buffer[2] << "]\n";
-
-        transfer_cx = 0;
-        transfer_cy = 0;
-        // Nombre TOTAL de mots à recevoir (2 pixels par mot, arrondi au supérieur)
-        transfer_words_total = (transfer_w * transfer_h + 1) / 2;
-
-        if (transfer_words_total > 0x20000) {   // > 128k mots = suspect
-            std::cerr << "A0 SUSPECT : " << std::dec << transfer_words_total
-                << " mots demandes, transfert ignore\n";
-            gp0_transfer = false;   // on refuse et on reste en mode commande
+        if (transfer_w * transfer_h > 0x40000) {
+            std::cerr << "A0 taille absurde " << std::dec << transfer_w << "x" << transfer_h
+                << ", ignore\n";
+            gp0_transfer = false;
         }
         else {
-            transfer_words_recus = 0;
+            transfer_cx = 0;
+            transfer_cy = 0;
             gp0_transfer = true;
         }
-
-        transfer_words_recus = 0;
-        gp0_transfer = true;
     }
     else if ((cmd & 0xFC) == 0x24) {
         // Decodage de la CLUT (mot 2, bits 16-31)
@@ -736,13 +722,13 @@ void Gpu::gp0(u32 value) {
         }
 
         if (is_textured) {
-            std::cout << "RECT pos=(" << std::dec << x << "," << y << ")"
-                << " taille=" << w << "x" << h
+            std::cout << "RECT pos=(" << std::dec << x << "," << y << ") "
+                << w << "x" << h
                 << " uv=(" << u << "," << v << ")"
                 << " texpage=(" << texpage_x << "," << texpage_y << ")"
                 << " depth=" << (int)tex_depth
                 << " clut=(" << clut_x << "," << clut_y << ")"
-                << " -> texel0=0x" << std::hex << lireTexel(u, v) << "\n";
+                << " texel0=0x" << std::hex << lireTexel(u, v) << "\n";
         }
         }
     
