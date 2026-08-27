@@ -17,6 +17,9 @@ int main(int argc, char* argv[]) {
         // --- Emulation ---
         if (!debug.estEnPause()) {
             emu.run(debug.getInstructionsParFrame());
+            if (emu.getBreakpoints().estDeclenche()) {
+                debug.mettreEnPause();     // ← à ajouter dans Debogueur
+            }
         }
         else if (debug.consommerStep()) {
             emu.run(1);          // une seule instruction

@@ -389,7 +389,38 @@ u32 Gpu::readStatus() {
 }
 
 u32 Gpu::readData() {
-    return 0;
+    // Si aucun transfert n'est actif, retourne 0
+    if (!gp0_transfer) {
+        return 0;
+    }
+
+    // Récupération du premier pixel 16-bit (bits 0-15 du mot 32-bit)
+    u16 pixel1 = vramGet(transfer_x + transfer_cx, transfer_y + transfer_cy);
+    transfer_cx++;
+
+    u16 pixel2 = 0;
+    // Récupération du second pixel 16-bit (bits 16-31 du mot 32-bit) si la ligne continue
+    if (transfer_cx < transfer_w) {
+        pixel2 = vramGet(transfer_x + transfer_cx, transfer_y + transfer_cy);
+        transfer_cx++;
+    }
+
+    // Assemblage des deux pixels 16-bit dans un mot 32-bit
+    u32 word = ((u32)pixel2 << 16) | pixel1;
+    transfer_words_recus++;
+
+    // Passage à la ligne suivante dans la VRAM si la largeur de la zone est atteinte
+    if (transfer_cx >= transfer_w) {
+        transfer_cx = 0;
+        transfer_cy++;
+    }
+
+    // Fin du transfert si tous les mots ou toutes les lignes ont été lus
+    if (transfer_words_recus >= transfer_words_total || transfer_cy >= transfer_h) {
+        gp0_transfer = false;
+    }
+
+    return word;
 }
 
 void Gpu::gp0(u32 value) {
@@ -730,6 +761,27 @@ void Gpu::gp0(u32 value) {
                 << " clut=(" << clut_x << "," << clut_y << ")"
                 << " texel0=0x" << std::hex << lireTexel(u, v) << "\n";
         }
+        }
+        else if (cmd == 0xC0) {
+            // 1. Destination / Origine dans la VRAM (Mot 1)
+            transfer_x = gp0_buffer[1] & 0x3FF;
+            transfer_y = (gp0_buffer[1] >> 16) & 0x1FF;
+
+            // 2. Dimensions de la zone à lire (Mot 2)
+            transfer_w = gp0_buffer[2] & 0x3FF;
+            transfer_h = (gp0_buffer[2] >> 16) & 0x1FF;
+            if (transfer_w == 0) transfer_w = 0x400;
+            if (transfer_h == 0) transfer_h = 0x200;
+
+            // 3. Calcul du nombre total de mots 32-bit (2 pixels 16-bit par mot)
+            u32 total_pixels = transfer_w * transfer_h;
+            transfer_words_total = (total_pixels + 1) / 2;
+            transfer_words_recus = 0;
+
+            // 4. Initialisation des curseurs et activation du transfert
+            transfer_cx = 0;
+            transfer_cy = 0;
+            gp0_transfer = true;
         }
     
 

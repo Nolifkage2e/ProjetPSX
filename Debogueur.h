@@ -55,7 +55,8 @@ public:
     void nouvelleFrame();          // debut de frame ImGui
     void dessiner();               // dessine toutes les fenetres
     void presenter();              // fin de frame + affichage
-    bool gererEvenements();        // retourne false si on doit quitter
+    bool gererEvenements();  
+    void mettreEnPause() { en_pause = true; }// retourne false si on doit quitter
 
     // Etat pour la boucle principale
     bool estEnPause() const { return en_pause; }

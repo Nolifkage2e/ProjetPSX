@@ -23,55 +23,54 @@ static u32 mask_region(u32 addr) {
 
 u32 Memoire::load32(u32 addr) {
     addr = mask_region(addr);
-    if (bp) bp->verifierAcces(addr, false, 0, pc_courant);
+    u32 valeur = 0;
     if (addr < RAM_SIZE) {
-        return *(u32*)&ram[addr];
+        valeur = *(u32*)&ram[addr];
     }
     else if (addr >= BIOS_START && addr < BIOS_START + BIOS_SIZE) {
-        return *(u32*)&bios[addr - BIOS_START];
+        valeur = *(u32*)&bios[addr - BIOS_START];
     }
     else if (addr == IRQ_STAT_ADDR)
     {
       //std::cout << "lecture sur I_STAT" << irq.readStatus() <<"\n";
-        return irq.readStatus();
+        valeur = irq.readStatus();
     }
     else if (addr == IRQ_MASK_ADDR)
     {
         //std::cout << "lecture sur I_MASK " << irq.readStatus() <<"\n";
-        return irq.readStatus();
+        valeur = irq.readStatus();
     }
     else if (addr == GP0_ADDR)
     {
-        u32 data = gpu.readData();
-        std::cout << "lecture sur gp0 " << addr << "\n";
-        return gpu.readData();
+        valeur = gpu.readData();
+        std::cout << "lecture sur gp0: " << valeur << "\n";
     }
     else if (addr == GP1_ADDR)
     {
-        u32 status = gpu.readStatus();
-        std::cout << "lecture sur gp1 " << status << "\n";
-        return status;
+        valeur = gpu.readStatus();
+        std::cout << "lecture sur gp1 " << valeur << "\n";
     }
     else if (addr >= DMA_BASE && addr < DMA_END)
     {
-        u32 val = dma->read(addr);
-        std::cout << "lecture sur DMA - adresse: 0x" << std::hex << addr << " : valeur: 0x" << std::hex << val <<"\n";
-        return val;
+        valeur = dma->read(addr);
+        std::cout << "lecture sur DMA - adresse: 0x" << std::hex << addr << " : valeur: 0x" << std::hex << valeur <<"\n";
     }
     else if (addr == DPCR_ADDR || addr == DICR_ADDR) {
-        u32 val = dma->read(addr);
-        std::cout << "lecture sur DMA - adresse: 0x" << std::hex << addr << " : valeur: 0x" << std::hex << val << "\n";
-        return val;
+        valeur = dma->read(addr);
+        std::cout << "lecture sur DMA - adresse: 0x" << std::hex << addr << " : valeur: 0x" << std::hex << valeur << "\n";
     }
     else if (addr >= 0x1F801100 && addr <= 0x1F80112F) {
         static u32 fake_timer32 = 0;
         fake_timer32 += 0x100;
-        return fake_timer32;
+		valeur = fake_timer32;
     }
     else {
         std::cerr << "Read32 from unknown address: 0x" << std::hex << addr << "\n";
-        return 0;
     }
+
+    if (bp) bp->verifierAcces(addr, false, valeur, pc_courant);
+    return valeur;
+
 }
 
 u16 Memoire::load16(u32 addr) {

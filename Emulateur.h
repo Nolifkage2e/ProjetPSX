@@ -22,9 +22,9 @@ class Emulateur {
     bool frame_prete = false;
 
 public:
+    Breakpoints& getBreakpoints() { return breakpoints; }
     Emulateur();
     Dma& getDma() { return dma; }
-    Breakpoints& getBreakpoints() { return breakpoints; }
 
     // Chargement
     void loadBIOS(const std::string& path);

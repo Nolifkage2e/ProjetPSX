@@ -3,6 +3,8 @@
 
 Emulateur::Emulateur() : dma(memoire, gpu), cpu(memoire) {
     memoire.setDma(&dma);
+    memoire.setBreakpoints(&breakpoints);
+    cpu.setBreakpoints(&breakpoints);
     // ? c'est LUI qu'on veut
 }
 
@@ -20,6 +22,7 @@ void Emulateur::run(u64 steps) {
     running = true;
     for (u64 i = 0; i < steps && running; ++i) {
         cpu.step();
+        if (breakpoints.estDeclenche()) break;
         if (++vblank_counter >= 564480) {
             vblank_counter = 0;
             memoire.getIrq().request(0);

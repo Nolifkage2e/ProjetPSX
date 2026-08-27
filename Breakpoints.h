@@ -56,9 +56,10 @@ public:
     }
 
     bool verifierAcces(u32 addr, bool ecriture, u32 valeur, u32 pc) {
+        u32 phys = addr & 0x1FFFFFFF;
         for (auto& w : watches) {
             if (!w.actif) continue;
-            if (w.addr != addr) continue;
+            if ((w.addr & 0x1FFFFFFF) != phys) continue;
             if (ecriture && !w.sur_ecriture) continue;
             if (!ecriture && !w.sur_lecture) continue;
 
