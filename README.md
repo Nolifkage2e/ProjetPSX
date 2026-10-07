@@ -4,7 +4,7 @@
 > d'émulation externe — CPU, mémoire, DMA, GPU et affichage entièrement
 > implémentés à la main à partir de la documentation matérielle et de l'IA.
 
-![Logo PlayStation rendu par l'émulateur]<img width="907" height="540" alt="image" src="https://github.com/user-attachments/assets/465a7f79-4b37-40c2-b8b0-fe6f7a512622" />
+<img width="907" height="540" alt="image" src="https://github.com/user-attachments/assets/465a7f79-4b37-40c2-b8b0-fe6f7a512622" />
 *Le logo de démarrage PlayStation, rendu par le rasterizer maison (gouraud shading)*
 
 ---
